@@ -3,6 +3,7 @@ var router = express.Router();
 let {
   createmodelSuggestion,
   fetchAllModelSuggestions,
+  fetchModelsByCategory,
   fetchmodelSuggestionById,
   ModelSuggestionUpdate,
   ModelSuggestionDelete,
@@ -11,6 +12,7 @@ const authMiddleware = require("../middleware/auth");
 
 router.post("/", authMiddleware, createmodelSuggestion);
 router.get("/", authMiddleware, fetchAllModelSuggestions);
+router.get("/category/:categoryId", authMiddleware, fetchModelsByCategory);
 router.get("/:id", authMiddleware, fetchmodelSuggestionById);
 router.put("/:id", authMiddleware, ModelSuggestionUpdate);
 router.delete("/:id", authMiddleware, ModelSuggestionDelete);

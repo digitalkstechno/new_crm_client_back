@@ -68,6 +68,24 @@ exports.fetchAllModelSuggestions = async (req, res) => {
   }
 };
 
+exports.fetchModelsByCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const models = await MODELSUGGESTION.find({ category: categoryId }).populate('category');
+    
+    return res.status(200).json({
+      status: "Success",
+      message: "Models fetched successfully",
+      data: models,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
 exports.fetchmodelSuggestionById = async (req, res) => {
   try {
     let modelID = req.params.id;

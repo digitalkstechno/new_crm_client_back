@@ -10,7 +10,7 @@ let {
 } = require("../controller/staff");
 const authMiddleware = require("../middleware/auth");
 
-router.post("/create", createStaff);
+router.post("/", createStaff);
 router.post("/login", loginStaff);
 router.get("/", authMiddleware, fetchAllStaffs);
 router.get("/:id", authMiddleware, fetchStaffById);

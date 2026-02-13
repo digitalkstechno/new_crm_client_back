@@ -18,21 +18,12 @@ let itemSchema = new Schema(
     qty: {type: String},
     rate: {type: String},
     gst: {type: String},
-    shippingCharges:{type: String},
     total: {type: String},
     isDone : {type: Boolean},
     customizationType: {
-      type: String,
-      enum: [
-        "Laser Engrave",
-        "UV Color Logo",
-        "Jingle Ad",
-        "B.T Pair Name",
-        "U.V. DTF Sticker",
-        "Glow Logo",
-        "O.E.M",
-        "Other",
-      ],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomizationType",
+      required: true,
     },
     personalization: {
       isPersonalized: {
@@ -80,6 +71,15 @@ let leadSchema = new Schema(
 
     deliveryDate: {
       type: Date,
+    },
+
+    shippingCharges: {
+      type: String,
+    },
+
+    budget: {
+      from: { type: String },
+      to: { type: String },
     },
 
     accountMaster: {

@@ -37,13 +37,19 @@ let accountMasterSchema = new Schema(
         "B to B Vendor",
         "Direct Com",
         "Networking Group",
-        "EndUser Reatil",
+        "EndUser Retail",
         "O.E.M",
       ],
+    },
+    sourceFrom: {
+      type: String,
     },
     assignBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Staff",
+    },
+    remark: {
+      type: String,
     },
     isConverted: {
       type: Boolean,

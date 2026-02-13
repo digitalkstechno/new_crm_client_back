@@ -10,6 +10,8 @@ exports.createLead = async (req, res) => {
       leadDate,
       clientType,
       deliveryDate,
+      shippingCharges,
+      budget,
       accountMaster,
       leadStatus,
       items,
@@ -22,6 +24,8 @@ exports.createLead = async (req, res) => {
       leadDate,
       clientType,
       deliveryDate,
+      shippingCharges,
+      budget,
       accountMaster,
       leadStatus,
       items,
@@ -68,9 +72,10 @@ exports.fetchAllLeads = async (req, res) => {
     const totalRecords = await LEAD.countDocuments(query);
 
     const leads = await LEAD.find(query)
-      .populate("accountMaster")
+      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
       .populate("items.inquiryCategory")
       .populate("items.modelSuggestion")
+      .populate("items.customizationType")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -103,9 +108,10 @@ exports.fetchLeadById = async (req, res) => {
     const id = req.params.id;
 
     const lead = await LEAD.findById(id)
-      .populate("accountMaster")
+      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
       .populate("items.inquiryCategory")
-      .populate("items.modelSuggestion");
+      .populate("items.modelSuggestion")
+      .populate("items.customizationType");
 
     if (!lead) throw new Error("Lead not found");
 
@@ -171,6 +177,49 @@ exports.deleteLead = async (req, res) => {
     });
   } catch (error) {
     return res.status(404).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   FETCH LEADS BY STATUS
+========================= */
+
+exports.fetchLeadsByStatus = async (req, res) => {
+  try {
+    const { status } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = { leadStatus: status };
+
+    const totalRecords = await LEAD.countDocuments(query);
+
+    const leads = await LEAD.find(query)
+      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
+      .populate("items.inquiryCategory")
+      .populate("items.modelSuggestion")
+      .populate("items.customizationType")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Leads fetched successfully",
+      pagination: {
+        totalRecords,
+        currentPage: page,
+        totalPages: Math.ceil(totalRecords / limit),
+        limit,
+      },
+      data: leads,
+    });
+  } catch (error) {
+    return res.status(500).json({
       status: "Fail",
       message: error.message,
     });

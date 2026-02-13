@@ -16,6 +16,11 @@ let modelSuggestionSchema = new Schema(
       type: String,
       required: true,
     },
+    gst: {
+      type: Number,
+      required: true,
+      default: 18,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

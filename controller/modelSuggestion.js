@@ -2,7 +2,7 @@ const MODELSUGGESTION = require("../model/modelSuggestion");
 
 exports.createmodelSuggestion = async (req, res) => {
   try {
-    const { name, modelNo, rate, category } = req.body;
+    const { name, modelNo, rate, gst, category } = req.body;
     let verify = await MODELSUGGESTION.findOne({ modelNo });
     if (verify) throw new Error("Model Suggestion already exists");
 
@@ -10,6 +10,7 @@ exports.createmodelSuggestion = async (req, res) => {
       name,
       modelNo,
       rate,
+      gst,
       category,
     });
 

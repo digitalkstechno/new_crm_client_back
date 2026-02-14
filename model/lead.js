@@ -20,7 +20,7 @@ let itemSchema = new Schema(
     rate: {type: String},
     gst: {type: String},
     total: {type: String},
-    isDone : {type: Boolean},
+    isDone: {type: Boolean, default: false},
     customizationType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CustomizationType",
@@ -54,6 +54,12 @@ let paymentSchema = new Schema({
       enum: ["Cash", "Cheque", "NEFT", "RTGS","DD"]
     },
     remark : {type: String}
+  })
+
+let followUpSchema = new Schema({
+    date: {type: Date, required: true},
+    description: {type: String, required: true},
+    createdAt: {type: Date, default: Date.now}
   })
 
 /* -------------------- LEAD SCHEMA -------------------- */
@@ -97,7 +103,13 @@ let leadSchema = new Schema(
     items: [itemSchema],
     remarks: [remarkSchema],
     paymentHistory: [paymentSchema],
+    followUps: [followUpSchema],
     totalAmount : {type: String},
+    maxStatusReached: {
+      type: String,
+      enum: LEAD_STATUSES,
+      default: "New Lead",
+    },
     isDeleted: {
       type: Boolean,
       default: false,

@@ -4,6 +4,21 @@ exports.createmodelSuggestion = async (req, res) => {
   try {
     const { name, modelNo, rate, gst, category } = req.body;
     let verify = await MODELSUGGESTION.findOne({ modelNo });
+    
+    // If exists and is deleted, reactivate it
+    if (verify && verify.isDeleted) {
+      const reactivated = await MODELSUGGESTION.findByIdAndUpdate(
+        verify._id,
+        { name, rate, gst, category, isDeleted: false },
+        { new: true }
+      );
+      return res.status(201).json({
+        status: "Success",
+        message: "Model Suggestion reactivated successfully",
+        data: reactivated,
+      });
+    }
+    
     if (verify) throw new Error("Model Suggestion already exists");
 
     const Details = await MODELSUGGESTION.create({
@@ -36,10 +51,15 @@ exports.fetchAllModelSuggestions = async (req, res) => {
     const search = req.query.search || "";
 
     const query = {
-      $or: [
-        { name: { $regex: search, $options: "i" } },
-        { modelNo: { $regex: search, $options: "i" } },
-        { rate: { $regex: search, $options: "i" } },
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { modelNo: { $regex: search, $options: "i" } },
+            { rate: { $regex: search, $options: "i" } },
+          ],
+        },
       ],
     };
 
@@ -72,7 +92,10 @@ exports.fetchAllModelSuggestions = async (req, res) => {
 exports.fetchModelsByCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const models = await MODELSUGGESTION.find({ category: categoryId }).populate('category');
+    const models = await MODELSUGGESTION.find({ 
+      category: categoryId, 
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
+    }).populate('category');
     
     return res.status(200).json({
       status: "Success",
@@ -145,7 +168,7 @@ exports.ModelSuggestionDelete = async (req, res) => {
       throw new Error("model suggestion not found");
     }
 
-    await MODELSUGGESTION.findByIdAndDelete(modelId);
+    await MODELSUGGESTION.findByIdAndUpdate(modelId, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

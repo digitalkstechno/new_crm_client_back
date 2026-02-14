@@ -59,14 +59,19 @@ exports.fetchAllLeads = async (req, res) => {
     const search = req.query.search || "";
 
     let query = {
-      leadStatus: { $in: req.permissions },
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        { leadStatus: { $in: req.permissions } },
+      ],
     };
 
     if (search) {
-      query.$or = [
-        { leadStatus: { $regex: search, $options: "i" } },
-        { clientType: { $regex: search, $options: "i" } },
-      ];
+      query.$and.push({
+        $or: [
+          { leadStatus: { $regex: search, $options: "i" } },
+          { clientType: { $regex: search, $options: "i" } },
+        ],
+      });
     }
 
     const totalRecords = await LEAD.countDocuments(query);
@@ -169,7 +174,7 @@ exports.deleteLead = async (req, res) => {
     const lead = await LEAD.findById(id);
     if (!lead) throw new Error("Lead not found");
 
-    await LEAD.findByIdAndDelete(id);
+    await LEAD.findByIdAndUpdate(id, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",
@@ -201,7 +206,10 @@ exports.fetchLeadsByStatus = async (req, res) => {
       });
     }
 
-    const query = { leadStatus: status };
+    const query = { 
+      leadStatus: status, 
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
+    };
 
     const totalRecords = await LEAD.countDocuments(query);
 

@@ -6,6 +6,28 @@ exports.createRole = async (req, res) => {
     const { roleName, allowedStatuses, canAccessSettings, canAccessAccountMaster, accountMasterViewType } = req.body;
 
     const existingRole = await ROLE.findOne({ roleName });
+    
+    // If role exists and is deleted, reactivate it
+    if (existingRole && existingRole.isDeleted) {
+      const reactivatedRole = await ROLE.findByIdAndUpdate(
+        existingRole._id,
+        { 
+          allowedStatuses, 
+          canAccessSettings,
+          canAccessAccountMaster,
+          accountMasterViewType,
+          isDeleted: false 
+        },
+        { new: true }
+      );
+      return res.status(201).json({
+        status: "Success",
+        message: "Role reactivated successfully",
+        data: reactivatedRole,
+      });
+    }
+    
+    // If role exists and is not deleted, throw error
     if (existingRole) throw new Error("Role already exists");
 
     const role = await ROLE.create({ 
@@ -37,8 +59,8 @@ exports.fetchAllRoles = async (req, res) => {
     const search = req.query.search || "";
 
     const query = search
-      ? { roleName: { $regex: search, $options: "i" }, isActive: true }
-      : { isActive: true };
+      ? { roleName: { $regex: search, $options: "i" }, isActive: true, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] }
+      : { isActive: true, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
     const totalRecords = await ROLE.countDocuments(query);
     const roles = await ROLE.find(query)
@@ -112,7 +134,7 @@ exports.deleteRole = async (req, res) => {
     const role = await ROLE.findById(req.params.id);
     if (!role) throw new Error("Role not found");
 
-    await ROLE.findByIdAndDelete(req.params.id);
+    await ROLE.findByIdAndUpdate(req.params.id, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

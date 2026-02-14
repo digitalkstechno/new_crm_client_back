@@ -4,6 +4,21 @@ exports.createCustomizationType = async (req, res) => {
   try {
     const { name } = req.body;
     let verify = await CUSTOMIZATIONTYPE.findOne({ name });
+    
+    // If exists and is deleted, reactivate it
+    if (verify && verify.isDeleted) {
+      const reactivated = await CUSTOMIZATIONTYPE.findByIdAndUpdate(
+        verify._id,
+        { isDeleted: false },
+        { new: true }
+      );
+      return res.status(201).json({
+        status: "Success",
+        message: "Customization Type reactivated successfully",
+        data: reactivated,
+      });
+    }
+    
     if (verify) throw new Error("Customization Type already exists");
 
     const customizationType = await CUSTOMIZATIONTYPE.create({ name });
@@ -28,7 +43,9 @@ exports.fetchAllCustomizationTypes = async (req, res) => {
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
 
-    const query = search ? { name: { $regex: search, $options: "i" } } : {};
+    const query = search 
+      ? { name: { $regex: search, $options: "i" }, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] } 
+      : { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
     const totalRecords = await CUSTOMIZATIONTYPE.countDocuments(query);
     const customizationTypes = await CUSTOMIZATIONTYPE.find(query)
@@ -105,7 +122,7 @@ exports.deleteCustomizationType = async (req, res) => {
     const customizationType = await CUSTOMIZATIONTYPE.findById(id);
     if (!customizationType) throw new Error("Customization Type not found");
 
-    await CUSTOMIZATIONTYPE.findByIdAndDelete(id);
+    await CUSTOMIZATIONTYPE.findByIdAndUpdate(id, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

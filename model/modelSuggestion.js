@@ -26,6 +26,10 @@ let modelSuggestionSchema = new Schema(
       required: true,
       ref : 'InquiryCategory'
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

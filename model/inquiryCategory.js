@@ -8,6 +8,10 @@ let inquiryCategorySchema = new Schema(
       required: [true, "Inquiry Category Name is Required"],
       unique: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

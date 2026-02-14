@@ -98,6 +98,10 @@ let leadSchema = new Schema(
     remarks: [remarkSchema],
     paymentHistory: [paymentSchema],
     totalAmount : {type: String},
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

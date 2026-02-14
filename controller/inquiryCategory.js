@@ -4,6 +4,21 @@ exports.createinquiryCategory = async (req, res) => {
   try {
     const { name } = req.body;
     let verify = await INQUIRYCATEGORY.findOne({ name });
+    
+    // If exists and is deleted, reactivate it
+    if (verify && verify.isDeleted) {
+      const reactivated = await INQUIRYCATEGORY.findByIdAndUpdate(
+        verify._id,
+        { isDeleted: false },
+        { new: true }
+      );
+      return res.status(201).json({
+        status: "Success",
+        message: "Inquiry Category reactivated successfully",
+        data: reactivated,
+      });
+    }
+    
     if (verify) throw new Error("Inquiry Category already exists");
 
     const inquiryDetails = await INQUIRYCATEGORY.create({ name });
@@ -30,7 +45,10 @@ exports.fetchAllinquiryCategoryies = async (req, res) => {
     const search = req.query.search || "";
 
     const query = {
-      $or: [{ name: { $regex: search, $options: "i" } }],
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        { $or: [{ name: { $regex: search, $options: "i" } }] },
+      ],
     };
 
     const totalInquire = await INQUIRYCATEGORY.countDocuments(query);
@@ -116,7 +134,7 @@ exports.inquiryCategoryDelete = async (req, res) => {
       throw new Error("inquiry Category not found");
     }
 
-    await INQUIRYCATEGORY.findByIdAndDelete(inquiryId);
+    await INQUIRYCATEGORY.findByIdAndUpdate(inquiryId, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

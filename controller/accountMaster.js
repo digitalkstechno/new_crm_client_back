@@ -14,7 +14,10 @@ exports.createAccountMaster = async (req, res) => {
     } = req.body;
 
     const verify = await ACCOUNTMASTER.findOne({
-      $or: [{ email }, { mobile }],
+      $and: [
+        { $or: [{ email }, { mobile }] },
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+      ],
     });
 
     if (verify) throw new Error("Account already exists with this email or mobile");
@@ -52,13 +55,18 @@ exports.fetchAllAccountMaster = async (req, res) => {
     const search = req.query.search || "";
 
     const query = {
-      $or: [
-        { companyName: { $regex: search, $options: "i" } },
-        { clientName: { $regex: search, $options: "i" } },
-        { mobile: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { website: { $regex: search, $options: "i" } },
-        { sourcebyTypeOfClient: { $regex: search, $options: "i" } },
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        {
+          $or: [
+            { companyName: { $regex: search, $options: "i" } },
+            { clientName: { $regex: search, $options: "i" } },
+            { mobile: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+            { website: { $regex: search, $options: "i" } },
+            { sourcebyTypeOfClient: { $regex: search, $options: "i" } },
+          ],
+        },
       ],
     };
 
@@ -143,7 +151,7 @@ exports.deleteAccountMaster = async (req, res) => {
     const oldAccount = await ACCOUNTMASTER.findById(id);
     if (!oldAccount) throw new Error("Account Master not found");
 
-    await ACCOUNTMASTER.findByIdAndDelete(id);
+    await ACCOUNTMASTER.findByIdAndUpdate(id, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

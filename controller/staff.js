@@ -7,9 +7,9 @@ exports.createStaff = async (req, res) => {
   try {
     const { fullName, email, phone, password, role } = req.body;
 
-    let staffFindWithEmail = await STAFF.findOne({ email });
+    let staffFindWithEmail = await STAFF.findOne({ email, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
     if (staffFindWithEmail) throw new Error("Email already exists");
-    let staffFindWithPhone = await STAFF.findOne({ phone });
+    let staffFindWithPhone = await STAFF.findOne({ phone, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
     if (staffFindWithPhone) throw new Error("Phone number already exists");
 
     const roleExists = await ROLE.findById(role);
@@ -79,10 +79,15 @@ exports.fetchAllStaffs = async (req, res) => {
     const search = req.query.search || "";
 
     const query = {
-      $or: [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        {
+          $or: [
+            { fullName: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+            { phone: { $regex: search, $options: "i" } },
+          ],
+        },
       ],
     };
 
@@ -168,7 +173,7 @@ exports.staffDelete = async (req, res) => {
       throw new Error("Staff not found");
     }
     
-    await STAFF.findByIdAndDelete(staffId);
+    await STAFF.findByIdAndUpdate(staffId, { isDeleted: true });
 
     return res.status(200).json({
       status: "Success",

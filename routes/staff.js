@@ -4,6 +4,7 @@ let {
   createStaff,
   loginStaff,
   fetchAllStaffs,
+  fetchAllStaffsForDropdown,
   fetchStaffById,
   staffUpdate,
   staffDelete,
@@ -13,6 +14,7 @@ const authMiddleware = require("../middleware/auth");
 router.post("/", createStaff);
 router.post("/login", loginStaff);
 router.get("/", authMiddleware, fetchAllStaffs);
+router.get("/dropdown", authMiddleware, fetchAllStaffsForDropdown);
 router.get("/:id", authMiddleware, fetchStaffById);
 router.put("/:id", authMiddleware, staffUpdate);
 router.delete("/:id", authMiddleware, staffDelete);

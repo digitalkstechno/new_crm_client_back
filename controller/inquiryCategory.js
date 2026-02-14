@@ -76,6 +76,29 @@ exports.fetchAllinquiryCategoryies = async (req, res) => {
   }
 };
 
+exports.fetchAllinquiryCategoryiesForDropdown = async (req, res) => {
+  try {
+    const query = {
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    };
+
+    const inquireData = await INQUIRYCATEGORY.find(query)
+      .select('_id name')
+      .sort({ name: 1 });
+
+    return res.status(200).json({
+      status: "Success",
+      message: "inquire category Data fetched successfully",
+      data: inquireData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
 exports.fetchinquiryCategoryById = async (req, res) => {
   try {
     let inquiryID = req.params.id;

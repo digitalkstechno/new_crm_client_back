@@ -72,6 +72,26 @@ exports.fetchAllCustomizationTypes = async (req, res) => {
   }
 };
 
+exports.fetchAllCustomizationTypesForDropdown = async (req, res) => {
+  try {
+    const query = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
+    const customizationTypes = await CUSTOMIZATIONTYPE.find(query)
+      .select('_id name')
+      .sort({ name: 1 });
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Customization Types fetched successfully",
+      data: customizationTypes,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
 exports.fetchCustomizationTypeById = async (req, res) => {
   try {
     const id = req.params.id;

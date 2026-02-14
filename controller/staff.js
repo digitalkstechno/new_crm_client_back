@@ -117,6 +117,30 @@ exports.fetchAllStaffs = async (req, res) => {
   }
 };
 
+exports.fetchAllStaffsForDropdown = async (req, res) => {
+  try {
+    const query = {
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    };
+
+    const staffsData = await STAFF.find(query)
+      .populate('role', 'canAccessAccountMaster')
+      .select('_id fullName role')
+      .sort({ fullName: 1 });
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Staffs fetched successfully",
+      data: staffsData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
 exports.fetchStaffById = async (req, res) => {
   try {
     let staffId = req.params.id;

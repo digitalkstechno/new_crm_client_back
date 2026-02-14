@@ -58,15 +58,15 @@ exports.fetchAllLeads = async (req, res) => {
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
 
-    let query = {};
+    let query = {
+      leadStatus: { $in: req.permissions },
+    };
 
     if (search) {
-      query = {
-        $or: [
-          { leadStatus: { $regex: search, $options: "i" } },
-          { clientType: { $regex: search, $options: "i" } },
-        ],
-      };
+      query.$or = [
+        { leadStatus: { $regex: search, $options: "i" } },
+        { clientType: { $regex: search, $options: "i" } },
+      ];
     }
 
     const totalRecords = await LEAD.countDocuments(query);
@@ -193,6 +193,13 @@ exports.fetchLeadsByStatus = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+
+    if (!req.permissions.includes(status)) {
+      return res.status(403).json({
+        status: "Fail",
+        message: "You don't have permission to view this status",
+      });
+    }
 
     const query = { leadStatus: status };
 

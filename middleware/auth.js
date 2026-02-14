@@ -7,11 +7,12 @@ async function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    let staffVerify = await STAFF.findById(decoded.id);
+    let staffVerify = await STAFF.findById(decoded.id).populate("role");
     if (!staffVerify) {
       return res.status(401).json({ message: "Invalid token" });
     }
     req.user = staffVerify;
+    req.permissions = staffVerify.role.allowedStatuses;
     next();
   } catch (err) {
     res.status(401).json({ message: "Invalid token" });

@@ -3,6 +3,7 @@ var router = express.Router();
 
 router.use("/health", require("./health"));
 router.use("/staff", require("./staff"));
+router.use("/role", require("./role"));
 router.use("/inquirycategory", require("./inquiryCategory"));
 router.use("/model", require("./modelSuggestion"));
 router.use("/customizationtype", require("./customizationType"));

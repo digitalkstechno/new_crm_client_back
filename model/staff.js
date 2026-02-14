@@ -22,6 +22,11 @@ let StaffSchema = new Schema(
       type: String,
       required: [true, "Password is Required"],
     },
+    role: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: [true, "Role is Required"],
+    },
     isDelete: {
       type: Boolean,
       default: false,

@@ -1,5 +1,6 @@
 let mongoose = require("mongoose");
 let Schema = mongoose.Schema;
+const { LEAD_STATUSES } = require("../constants/leadStatus");
 
 /* -------------------- ITEM SCHEMA -------------------- */
 
@@ -89,18 +90,7 @@ let leadSchema = new Schema(
 
     leadStatus: {
       type: String,
-      enum: [
-        "New Lead",
-        "Quotation Given",
-        "Follow Remark",
-        "Order Confirmation",
-        "PI",
-        "Order Execution",
-        "Dispatch",
-        "Final Payment",
-        "Completed",
-        "Lost",
-      ],
+      enum: LEAD_STATUSES,
       default: "New Lead",
     },
 

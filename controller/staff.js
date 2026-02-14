@@ -1,15 +1,19 @@
 const STAFF = require("../model/staff");
+const ROLE = require("../model/role");
 const { encryptData, decryptData } = require("../utils/crypto");
 const jwt = require("jsonwebtoken");
 
 exports.createStaff = async (req, res) => {
   try {
-    const { fullName, email, phone, password } = req.body;
+    const { fullName, email, phone, password, role } = req.body;
 
     let staffFindWithEmail = await STAFF.findOne({ email });
     if (staffFindWithEmail) throw new Error("Email already exists");
     let staffFindWithPhone = await STAFF.findOne({ phone });
     if (staffFindWithPhone) throw new Error("Phone number already exists");
+
+    const roleExists = await ROLE.findById(role);
+    if (!roleExists) throw new Error("Role not found");
 
     const encryptedPassword = encryptData(password);
 
@@ -18,14 +22,16 @@ exports.createStaff = async (req, res) => {
       email,
       phone,
       password: encryptedPassword,
+      role,
     };
 
     const staffDetails = await STAFF.create(staffData);
+    const populatedStaff = await STAFF.findById(staffDetails._id).populate("role");
 
     return res.status(201).json({
       status: "Success",
       message: "Staff created successfully",
-      data: staffDetails,
+      data: populatedStaff,
     });
   } catch (error) {
     return res.status(400).json({
@@ -38,7 +44,7 @@ exports.createStaff = async (req, res) => {
 exports.loginStaff = async (req, res) => {
   try {
     const { email, password } = req.body;
-    let staffverify = await STAFF.findOne({ email })
+    let staffverify = await STAFF.findOne({ email }).populate("role");
     if (!staffverify) {
       throw new Error("Staff not found");
     }
@@ -53,6 +59,8 @@ exports.loginStaff = async (req, res) => {
       message: "Staff logged in successfully",
       data: staffverify,
       token,
+      permissions: staffverify.role.allowedStatuses,
+      canAccessSettings: staffverify.role.canAccessSettings,
     });
   } catch (error) {
     return res.status(400).json({
@@ -80,6 +88,7 @@ exports.fetchAllStaffs = async (req, res) => {
 
     const totalStaff = await STAFF.countDocuments(query);
     const staffsData = await STAFF.find(query)
+      .populate("role")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -106,7 +115,7 @@ exports.fetchAllStaffs = async (req, res) => {
 exports.fetchStaffById = async (req, res) => {
   try {
     let staffId = req.params.id;
-    let staffData = await STAFF.findById(staffId)
+    let staffData = await STAFF.findById(staffId).populate("role");
     if (!staffData) {
       throw new Error("Staff not found");
     }
@@ -136,7 +145,7 @@ exports.staffUpdate = async (req, res) => {
     }
     let updatedStaff = await STAFF.findByIdAndUpdate(staffId, req.body, {
       new: true,
-    });
+    }).populate("role");
     return res.status(200).json({
       status: "Success",
       message: "Staff updated successfully",

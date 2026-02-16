@@ -1,5 +1,7 @@
 var express = require("express");
 var router = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 const authMiddleware = require("../middleware/auth");
 const {
   createAccountMaster,
@@ -7,8 +9,14 @@ const {
   fetchAccountMasterById,
   updateAccountMaster,
   deleteAccountMaster,
+  downloadSampleExcel,
+  exportAccountMaster,
+  importAccountMaster
 } = require("../controller/accountMaster");
 
+router.get("/sample-excel", authMiddleware, downloadSampleExcel);
+router.get("/export", authMiddleware, exportAccountMaster);
+router.post("/import", authMiddleware, upload.single('file'), importAccountMaster);
 router.post("/", authMiddleware, createAccountMaster);
 router.get("/", authMiddleware, fetchAllAccountMaster);
 router.get("/:id", authMiddleware, fetchAccountMasterById);

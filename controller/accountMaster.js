@@ -1,4 +1,6 @@
 const ACCOUNTMASTER = require("../model/accountMaster");
+const STAFF = require("../model/staff");
+const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
 
 exports.createAccountMaster = async (req, res) => {
   try {
@@ -162,5 +164,97 @@ exports.deleteAccountMaster = async (req, res) => {
       status: "Fail",
       message: error.message,
     });
+  }
+};
+
+exports.downloadSampleExcel = async (req, res) => {
+  try {
+    const workbook = await generateSampleExcel();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Sample.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    return res.status(500).json({ status: "Fail", message: error.message });
+  }
+};
+
+exports.exportAccountMaster = async (req, res) => {
+  try {
+    const accounts = await ACCOUNTMASTER.find({ isDeleted: false }).populate('assignBy').sort({ createdAt: -1 });
+    const workbook = await generateExportExcel(accounts);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Export.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    return res.status(500).json({ status: "Fail", message: error.message });
+  }
+};
+
+exports.importAccountMaster = async (req, res) => {
+  try {
+    if (!req.file) throw new Error("No file uploaded");
+
+    const { accounts, errors } = await parseImportExcel(req.file.buffer);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ status: "Fail", message: "Validation errors", errors });
+    }
+
+    const results = { success: 0, failed: 0, errors: [] };
+
+    for (let i = 0; i < accounts.length; i++) {
+      try {
+        const accountData = accounts[i];
+        
+        // Check duplicate
+        const existing = await ACCOUNTMASTER.findOne({
+          $and: [
+            { $or: [{ email: accountData.email }, { mobile: accountData.mobile }] },
+            { isDeleted: false }
+          ]
+        });
+
+        if (existing) {
+          results.failed++;
+          results.errors.push(`Row ${i + 2}: Duplicate email or mobile`);
+          continue;
+        }
+
+        // Find staff by email
+        let assignBy = null;
+        if (accountData.assignByEmail) {
+          const staff = await STAFF.findOne({ email: accountData.assignByEmail, isDeleted: false });
+          if (staff) assignBy = staff._id;
+        }
+
+        await ACCOUNTMASTER.create({
+          companyName: accountData.companyName,
+          clientName: accountData.clientName,
+          address: accountData.address,
+          mobile: accountData.mobile,
+          email: accountData.email,
+          website: accountData.website,
+          sourcebyTypeOfClient: accountData.sourcebyTypeOfClient,
+          sourceFrom: accountData.sourceFrom,
+          assignBy: assignBy,
+          remark: accountData.remark
+        });
+
+        results.success++;
+      } catch (err) {
+        results.failed++;
+        results.errors.push(`Row ${i + 2}: ${err.message}`);
+      }
+    }
+
+    return res.status(200).json({
+      status: "Success",
+      message: `Import completed. Success: ${results.success}, Failed: ${results.failed}`,
+      data: results
+    });
+  } catch (error) {
+    return res.status(500).json({ status: "Fail", message: error.message });
   }
 };

@@ -66,10 +66,20 @@ exports.fetchAllLeads = async (req, res) => {
     };
 
     if (search) {
+      const accountMasters = await require("../model/accountMaster").find({
+        $or: [
+          { companyName: { $regex: search, $options: "i" } },
+          { clientName: { $regex: search, $options: "i" } }
+        ]
+      }).select('_id');
+      
+      const accountMasterIds = accountMasters.map(am => am._id);
+      
       query.$and.push({
         $or: [
           { leadStatus: { $regex: search, $options: "i" } },
           { clientType: { $regex: search, $options: "i" } },
+          { accountMaster: { $in: accountMasterIds } }
         ],
       });
     }

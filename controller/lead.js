@@ -87,7 +87,13 @@ exports.fetchAllLeads = async (req, res) => {
     const totalRecords = await LEAD.countDocuments(query);
 
     const leads = await LEAD.find(query)
-      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
+      .populate({ 
+        path: "accountMaster", 
+        populate: [
+          { path: "assignBy" },
+          { path: "sourcebyTypeOfClient" }
+        ]
+      })
       .populate("items.inquiryCategory")
       .populate("items.modelSuggestion")
       .populate("items.customizationType")
@@ -123,7 +129,13 @@ exports.fetchLeadById = async (req, res) => {
     const id = req.params.id;
 
     const lead = await LEAD.findById(id)
-      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
+      .populate({ 
+        path: "accountMaster", 
+        populate: [
+          { path: "assignBy" },
+          { path: "sourcebyTypeOfClient" }
+        ]
+      })
       .populate("items.inquiryCategory")
       .populate("items.modelSuggestion")
       .populate("items.customizationType");
@@ -244,7 +256,13 @@ exports.fetchLeadsByStatus = async (req, res) => {
     const totalRecords = await LEAD.countDocuments(query);
 
     const leads = await LEAD.find(query)
-      .populate({ path: "accountMaster", populate: { path: "assignBy" } })
+      .populate({ 
+        path: "accountMaster", 
+        populate: [
+          { path: "assignBy" },
+          { path: "sourcebyTypeOfClient" }
+        ]
+      })
       .populate("items.inquiryCategory")
       .populate("items.modelSuggestion")
       .populate("items.customizationType")

@@ -12,7 +12,9 @@ exports.createAccountMaster = async (req, res) => {
       email,
       website,
       sourcebyTypeOfClient,
+      sourceFrom,
       assignBy,
+      remark,
     } = req.body;
 
     const verify = await ACCOUNTMASTER.findOne({
@@ -32,13 +34,20 @@ exports.createAccountMaster = async (req, res) => {
       email,
       website,
       sourcebyTypeOfClient,
+      sourceFrom,
       assignBy,
+      remark,
     });
+
+    const populatedAccount = await ACCOUNTMASTER.findById(account._id)
+      .populate("assignBy")
+      .populate("sourcebyTypeOfClient")
+      .populate("sourceFrom");
 
     return res.status(201).json({
       status: "Success",
       message: "Account Master created successfully",
-      data: account,
+      data: populatedAccount,
     });
   } catch (error) {
     return res.status(400).json({
@@ -66,7 +75,6 @@ exports.fetchAllAccountMaster = async (req, res) => {
             { mobile: { $regex: search, $options: "i" } },
             { email: { $regex: search, $options: "i" } },
             { website: { $regex: search, $options: "i" } },
-            { sourcebyTypeOfClient: { $regex: search, $options: "i" } },
           ],
         },
       ],
@@ -78,7 +86,9 @@ exports.fetchAllAccountMaster = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .populate("assignBy");
+      .populate("assignBy")
+      .populate("sourcebyTypeOfClient")
+      .populate("sourceFrom");
 
     return res.status(200).json({
       status: "Success",
@@ -103,7 +113,10 @@ exports.fetchAccountMasterById = async (req, res) => {
   try {
     const id = req.params.id;
 
-    const account = await ACCOUNTMASTER.findById(id).populate("assignBy");
+    const account = await ACCOUNTMASTER.findById(id)
+      .populate("assignBy")
+      .populate("sourcebyTypeOfClient")
+      .populate("sourceFrom");
 
     if (!account) throw new Error("Account Master not found");
 
@@ -131,7 +144,10 @@ exports.updateAccountMaster = async (req, res) => {
       id,
       req.body,
       { new: true }
-    );
+    )
+      .populate("assignBy")
+      .populate("sourcebyTypeOfClient")
+      .populate("sourceFrom");
 
     return res.status(200).json({
       status: "Success",
@@ -181,7 +197,11 @@ exports.downloadSampleExcel = async (req, res) => {
 
 exports.exportAccountMaster = async (req, res) => {
   try {
-    const accounts = await ACCOUNTMASTER.find({ isDeleted: false }).populate('assignBy').sort({ createdAt: -1 });
+    const accounts = await ACCOUNTMASTER.find({ isDeleted: false })
+      .populate('assignBy')
+      .populate('sourcebyTypeOfClient')
+      .populate('sourceFrom')
+      .sort({ createdAt: -1 });
     const workbook = await generateExportExcel(accounts);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Export.xlsx');

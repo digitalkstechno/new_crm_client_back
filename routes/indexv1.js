@@ -7,6 +7,8 @@ router.use("/role", require("./role"));
 router.use("/inquirycategory", require("./inquiryCategory"));
 router.use("/model", require("./modelSuggestion"));
 router.use("/customizationtype", require("./customizationType"));
+router.use("/clienttype", require("./clientType"));
+router.use("/sourcefrom", require("./sourceFrom"));
 router.use("/accountmaster", require("./accountMaster"));
 router.use("/lead", require("./lead"));
 

@@ -31,18 +31,13 @@ let accountMasterSchema = new Schema(
       required: true,
     },
     sourcebyTypeOfClient: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClientType",
       required: true,
-      enum: [
-        "B to B Vendor",
-        "Direct Com",
-        "Networking Group",
-        "EndUser Retail",
-        "O.E.M",
-      ],
     },
     sourceFrom: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SourceFrom",
     },
     assignBy: {
       type: mongoose.Schema.Types.ObjectId,

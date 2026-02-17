@@ -53,12 +53,15 @@ exports.loginStaff = async (req, res) => {
     if (String(decryptedPassword) !== password) {
       throw new Error("Invalid password");
     }
-    let token = jwt.sign({ id: staffverify._id }, process.env.JWT_SECRET_KEY);
+    let token = jwt.sign({ id: staffverify._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    let refreshToken = jwt.sign({ id: staffverify._id }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '7d' });
+    
     return res.status(200).json({
       status: "Success",
       message: "Staff logged in successfully",
       data: staffverify,
       token,
+      refreshToken,
       permissions: staffverify.role.allowedStatuses,
       canAccessSettings: staffverify.role.canAccessSettings,
     });
@@ -66,6 +69,38 @@ exports.loginStaff = async (req, res) => {
     return res.status(400).json({
       status: "Fail",
       message: error.message,
+    });
+  }
+};
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      throw new Error("Refresh token is required");
+    }
+    
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET_KEY);
+    const staff = await STAFF.findById(decoded.id).populate("role");
+    
+    if (!staff) {
+      throw new Error("Staff not found");
+    }
+    
+    const newToken = jwt.sign({ id: staff._id }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+    const newRefreshToken = jwt.sign({ id: staff._id }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '7d' });
+    
+    return res.status(200).json({
+      status: "Success",
+      message: "Token refreshed successfully",
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: "Fail",
+      message: error.message || "Invalid refresh token",
     });
   }
 };

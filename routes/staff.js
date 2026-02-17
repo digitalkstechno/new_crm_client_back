@@ -3,6 +3,7 @@ var router = express.Router();
 let {
   createStaff,
   loginStaff,
+  refreshToken,
   fetchAllStaffs,
   fetchAllStaffsForDropdown,
   fetchStaffById,
@@ -13,6 +14,7 @@ const authMiddleware = require("../middleware/auth");
 
 router.post("/", createStaff);
 router.post("/login", loginStaff);
+router.post("/refresh-token", refreshToken);
 router.get("/", authMiddleware, fetchAllStaffs);
 router.get("/dropdown", authMiddleware, fetchAllStaffsForDropdown);
 router.get("/:id", authMiddleware, fetchStaffById);

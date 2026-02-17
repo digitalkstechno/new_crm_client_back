@@ -91,7 +91,8 @@ exports.fetchAllLeads = async (req, res) => {
         path: "accountMaster", 
         populate: [
           { path: "assignBy" },
-          { path: "sourcebyTypeOfClient" }
+          { path: "sourcebyTypeOfClient" },
+          { path: "sourceFrom" }
         ]
       })
       .populate("items.inquiryCategory")
@@ -133,7 +134,8 @@ exports.fetchLeadById = async (req, res) => {
         path: "accountMaster", 
         populate: [
           { path: "assignBy" },
-          { path: "sourcebyTypeOfClient" }
+          { path: "sourcebyTypeOfClient" },
+          { path: "sourceFrom" }
         ]
       })
       .populate("items.inquiryCategory")
@@ -260,7 +262,8 @@ exports.fetchLeadsByStatus = async (req, res) => {
         path: "accountMaster", 
         populate: [
           { path: "assignBy" },
-          { path: "sourcebyTypeOfClient" }
+          { path: "sourcebyTypeOfClient" },
+          { path: "sourceFrom" }
         ]
       })
       .populate("items.inquiryCategory")

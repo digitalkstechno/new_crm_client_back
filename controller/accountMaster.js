@@ -216,13 +216,13 @@ exports.importAccountMaster = async (req, res) => {
   try {
     if (!req.file) throw new Error("No file uploaded");
 
-    const { accounts, errors } = await parseImportExcel(req.file.buffer);
+    const { accounts, errors: parseErrors } = await parseImportExcel(req.file.buffer);
 
-    if (errors.length > 0) {
-      return res.status(400).json({ status: "Fail", message: "Validation errors", errors });
+    if (parseErrors.length > 0) {
+      return res.status(400).json({ status: "Fail", message: "Validation errors", errors: parseErrors });
     }
 
-    const results = { success: 0, failed: 0, errors: [] };
+    const results = { success: 0, failed: 0, errors: [], failedRecords: [] };
 
     for (let i = 0; i < accounts.length; i++) {
       try {
@@ -238,15 +238,19 @@ exports.importAccountMaster = async (req, res) => {
 
         if (existing) {
           results.failed++;
-          results.errors.push(`Row ${i + 2}: Duplicate email or mobile`);
+          const errorMsg = "Duplicate email or mobile";
+          results.errors.push(`Row ${i + 2}: ${errorMsg}`);
+          results.failedRecords.push({
+            rowNumber: i + 2,
+            ...accountData,
+            issue: errorMsg
+          });
           continue;
         }
 
-        // Find staff by email
         let assignBy = null;
-        if (accountData.assignByEmail) {
-          const staff = await STAFF.findOne({ email: accountData.assignByEmail, isDeleted: false });
-          if (staff) assignBy = staff._id;
+        if (accountData.assignBy) {
+          assignBy = accountData.assignBy;
         }
 
         await ACCOUNTMASTER.create({
@@ -265,7 +269,13 @@ exports.importAccountMaster = async (req, res) => {
         results.success++;
       } catch (err) {
         results.failed++;
-        results.errors.push(`Row ${i + 2}: ${err.message}`);
+        const errorMsg = err.message;
+        results.errors.push(`Row ${i + 2}: ${errorMsg}`);
+        results.failedRecords.push({
+          rowNumber: i + 2,
+          ...accounts[i],
+          issue: errorMsg
+        });
       }
     }
 

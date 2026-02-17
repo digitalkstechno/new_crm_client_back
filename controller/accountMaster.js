@@ -64,6 +64,7 @@ exports.fetchAllAccountMaster = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const search = req.query.search || "";
+    const noLeadsOnly = req.query.noLeadsOnly === "true";
 
     const query = {
       $and: [
@@ -90,6 +91,22 @@ exports.fetchAllAccountMaster = async (req, res) => {
       .populate("sourcebyTypeOfClient")
       .populate("sourceFrom");
 
+    const LEAD = require("../model/lead");
+    const accountsWithLeadCount = await Promise.all(
+      accounts.map(async (account) => {
+        const leadCount = await LEAD.countDocuments({ accountMaster: account._id });
+        return {
+          ...account.toObject(),
+          leadCount,
+        };
+      })
+    );
+
+    let filteredAccounts = accountsWithLeadCount;
+    if (noLeadsOnly) {
+      filteredAccounts = accountsWithLeadCount.filter(acc => acc.leadCount === 0);
+    }
+
     return res.status(200).json({
       status: "Success",
       message: "Account Master data fetched successfully",
@@ -99,7 +116,7 @@ exports.fetchAllAccountMaster = async (req, res) => {
         totalPages: Math.ceil(totalRecords / limit),
         limit,
       },
-      data: accounts,
+      data: filteredAccounts,
     });
   } catch (error) {
     return res.status(500).json({

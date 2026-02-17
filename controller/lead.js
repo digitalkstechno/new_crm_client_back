@@ -395,3 +395,254 @@ exports.addPayment = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   DASHBOARD STATS
+========================= */
+
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const { LEAD_STATUSES } = require("../constants/leadStatus");
+    const { startDate, endDate, topLimit } = req.query;
+    const limit = parseInt(topLimit) || 5;
+    
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        createdAt: {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        }
+      };
+    }
+    
+    const statusCounts = {};
+    for (const status of req.permissions) {
+      const count = await LEAD.countDocuments({
+        leadStatus: status,
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+        ...dateFilter
+      });
+      statusCounts[status] = count;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayFollowUps = await LEAD.find({
+      leadStatus: "Follow Up",
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      "followUps.date": {
+        $gte: today,
+        $lt: tomorrow
+      }
+    })
+    .populate({ 
+      path: "accountMaster", 
+      populate: [
+        { path: "assignBy" },
+        { path: "sourcebyTypeOfClient" }
+      ]
+    })
+    .select("accountMaster leadStatus followUps")
+    .sort({ "followUps.date": 1 });
+
+    const followUpsWithDetails = todayFollowUps.map(lead => {
+      const todayFollowUp = lead.followUps.find(f => {
+        const fDate = new Date(f.date);
+        return fDate >= today && fDate < tomorrow;
+      });
+      return {
+        leadId: lead._id,
+        companyName: lead.accountMaster?.companyName,
+        clientName: lead.accountMaster?.clientName,
+        leadStatus: lead.leadStatus,
+        followUpDate: todayFollowUp?.date,
+        followUpDescription: todayFollowUp?.description
+      };
+    });
+
+    const allLeads = await LEAD.find({
+      leadStatus: { $in: req.permissions },
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      ...dateFilter
+    }).select("totalAmount paymentHistory accountMaster leadStatus items").populate("accountMaster").populate("items.modelSuggestion");
+
+    let totalRevenue = 0;
+    let totalPaid = 0;
+    let totalPending = 0;
+    const pendingPaymentLeads = [];
+    const modelCounts = {};
+
+    allLeads.forEach(lead => {
+      const total = parseFloat(lead.totalAmount || 0);
+      const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      const pending = total - paid;
+      totalRevenue += total;
+      totalPaid += paid;
+      totalPending += pending;
+
+      if (lead.leadStatus === "Final Payment" && pending > 1) {
+        pendingPaymentLeads.push({
+          leadId: lead._id,
+          companyName: lead.accountMaster?.companyName,
+          clientName: lead.accountMaster?.clientName,
+          totalAmount: total.toFixed(2),
+          paidAmount: paid.toFixed(2),
+          pendingAmount: pending.toFixed(2)
+        });
+      }
+
+      lead.items.forEach(item => {
+        if (item.modelSuggestion) {
+          const modelKey = `${item.modelSuggestion.name}|${item.modelSuggestion.modelNo}`;
+          const qty = parseInt(item.qty || 0);
+          if (modelCounts[modelKey]) {
+            modelCounts[modelKey] += qty;
+          } else {
+            modelCounts[modelKey] = qty;
+          }
+        }
+      });
+    });
+
+    const topModels = Object.entries(modelCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([key, count]) => {
+        const [name, modelNo] = key.split('|');
+        return { name, modelNo, count };
+      });
+
+    const ACCOUNTMASTER = require("../model/accountMaster");
+    const totalAccounts = await ACCOUNTMASTER.countDocuments({
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    });
+
+    const convertedAccountIds = [...new Set(allLeads.map(lead => lead.accountMaster?._id?.toString()).filter(Boolean))];
+    const convertedCount = convertedAccountIds.length;
+    const notConvertedCount = totalAccounts - convertedCount;
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Dashboard stats fetched successfully",
+      data: {
+        statusCounts,
+        todayFollowUps: followUpsWithDetails,
+        paymentStats: {
+          totalRevenue: totalRevenue.toFixed(2),
+          totalPaid: totalPaid.toFixed(2),
+          totalPending: totalPending.toFixed(2)
+        },
+        pendingPaymentLeads,
+        topModels,
+        accountStats: {
+          totalAccounts,
+          convertedToLead: convertedCount,
+          notConvertedToLead: notConvertedCount
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   GRAPH DATA
+========================= */
+
+exports.getGraphData = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        createdAt: {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        }
+      };
+    }
+
+    const allLeads = await LEAD.find({
+      leadStatus: { $in: req.permissions },
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      ...dateFilter
+    }).select("totalAmount paymentHistory leadStatus accountMaster createdAt");
+
+    // Payment Stats Graph Data
+    let totalRevenue = 0;
+    let totalPaid = 0;
+    let totalPending = 0;
+
+    allLeads.forEach(lead => {
+      const total = parseFloat(lead.totalAmount || 0);
+      const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      const pending = total - paid;
+      totalRevenue += total;
+      totalPaid += paid;
+      totalPending += pending;
+    });
+
+    const paymentGraphData = [
+      { label: "Total Revenue", value: parseFloat(totalRevenue.toFixed(2)), color: "#10b981" },
+      { label: "Total Paid", value: parseFloat(totalPaid.toFixed(2)), color: "#3b82f6" },
+      { label: "Total Pending", value: parseFloat(totalPending.toFixed(2)), color: "#ef4444" }
+    ];
+
+    // Lead Status Graph Data
+    const statusCounts = {};
+    for (const status of req.permissions) {
+      const count = await LEAD.countDocuments({
+        leadStatus: status,
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+        ...dateFilter
+      });
+      if (count > 0) {
+        statusCounts[status] = count;
+      }
+    }
+
+    const statusGraphData = Object.entries(statusCounts).map(([status, count]) => ({
+      label: status,
+      value: count
+    }));
+
+    // Account Conversion Graph Data
+    const ACCOUNTMASTER = require("../model/accountMaster");
+    const totalAccounts = await ACCOUNTMASTER.countDocuments({
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    });
+
+    const convertedAccountIds = [...new Set(allLeads.map(lead => lead.accountMaster?.toString()).filter(Boolean))];
+    const convertedCount = convertedAccountIds.length;
+    const notConvertedCount = totalAccounts - convertedCount;
+
+    const accountConversionGraphData = [
+      { label: "Converted to Lead", value: convertedCount, color: "#10b981" },
+      { label: "Not Converted", value: notConvertedCount, color: "#eab308" }
+    ];
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Graph data fetched successfully",
+      data: {
+        paymentGraph: paymentGraphData,
+        leadStatusGraph: statusGraphData,
+        accountConversionGraph: accountConversionGraphData
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};

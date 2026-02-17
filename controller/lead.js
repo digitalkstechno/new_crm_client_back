@@ -174,15 +174,17 @@ exports.updateLead = async (req, res) => {
     if (newStatus) {
       const currentIndex = LEAD_STATUSES.indexOf(oldLead.leadStatus);
       const newIndex = LEAD_STATUSES.indexOf(newStatus);
-      const maxIndex = LEAD_STATUSES.indexOf(oldLead.maxStatusReached || "New Lead");
       
-      if (newIndex < maxIndex && newStatus !== "Lost") {
+      // Allow only 1 step backward, except for Lost
+      if (newIndex < currentIndex - 1 && newStatus !== "Lost") {
         return res.status(400).json({
           status: "Fail",
-          message: "Cannot move lead backwards in status",
+          message: "Can only move 1 step backward",
         });
       }
       
+      // Update maxStatusReached if moving forward
+      const maxIndex = LEAD_STATUSES.indexOf(oldLead.maxStatusReached || "New Lead");
       if (newIndex > maxIndex) {
         req.body.maxStatusReached = newStatus;
       }
@@ -344,6 +346,46 @@ exports.toggleItemDone = async (req, res) => {
     return res.status(200).json({
       status: "Success",
       message: "Item status updated",
+      data: lead,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   ADD PAYMENT
+========================= */
+
+exports.addPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    if (!amount || parseFloat(amount) <= 0) {
+      throw new Error("Valid amount is required");
+    }
+
+    const lead = await LEAD.findById(id);
+    if (!lead) throw new Error("Lead not found");
+
+    const totalAmount = parseFloat(lead.totalAmount || 0);
+    const paidAmount = lead.paymentHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+    const pendingAmount = totalAmount - paidAmount;
+
+    if (parseFloat(amount) > pendingAmount) {
+      throw new Error("Amount exceeds pending amount");
+    }
+
+    lead.paymentHistory.push({ amount, date: new Date() });
+    await lead.save();
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Payment added successfully",
       data: lead,
     });
   } catch (error) {

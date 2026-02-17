@@ -105,6 +105,7 @@ let leadSchema = new Schema(
     paymentHistory: [paymentSchema],
     followUps: [followUpSchema],
     totalAmount : {type: String},
+    confirmationRemark: {type: String},
     maxStatusReached: {
       type: String,
       enum: LEAD_STATUSES,

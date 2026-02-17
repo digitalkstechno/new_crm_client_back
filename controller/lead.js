@@ -376,7 +376,7 @@ exports.addPayment = async (req, res) => {
     const paidAmount = lead.paymentHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
     const pendingAmount = totalAmount - paidAmount;
 
-    if (parseFloat(amount) > pendingAmount) {
+    if (parseFloat(amount) > pendingAmount + 0.01) {
       throw new Error("Amount exceeds pending amount");
     }
 

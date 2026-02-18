@@ -7,12 +7,18 @@ async function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    let staffVerify = await STAFF.findById(decoded.id).populate("role");
-    if (!staffVerify) {
+    const staff = await STAFF.findById(decoded.id).populate("role");
+    
+    if (!staff || staff.isDeleted) {
       return res.status(401).json({ message: "Invalid token" });
     }
-    req.user = staffVerify;
-    req.permissions = staffVerify.role.allowedStatuses;
+    
+    req.user = staff;
+    req.permissions = staff.role.allowedStatuses || [];
+    req.canAccessDashboard = staff.role.canAccessDashboard || false;
+    req.canAccessSettings = staff.role.canAccessSettings || false;
+    req.canAccessAccountMaster = staff.role.canAccessAccountMaster || false;
+    req.accountMasterViewType = staff.role.accountMasterViewType || 'view_own';
     next();
   } catch (err) {
     res.status(401).json({ message: "Invalid token" });

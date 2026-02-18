@@ -26,11 +26,14 @@ exports.generateSampleExcel = async () => {
   ];
 
   // Fetch dropdown data
-  const [clientTypes, sourceFroms, staffList] = await Promise.all([
+  const [clientTypes, sourceFroms, allStaff] = await Promise.all([
     CLIENTTYPE.find({ isDeleted: false }).select('name'),
     SOURCEFROM.find({ isDeleted: false }).select('name'),
     STAFF.find({ isDeleted: false }).populate('role').select('fullName email role')
   ]);
+
+  // Filter staff with canAccessAccountMaster permission
+  const staffList = allStaff.filter(staff => staff.role?.canAccessAccountMaster === true);
 
   // Add sample data
   if (clientTypes.length > 0 && staffList.length > 0) {
@@ -205,11 +208,14 @@ exports.parseImportExcel = async (buffer) => {
   const errors = [];
 
   // Fetch all reference data
-  const [clientTypes, sourceFroms, staffList] = await Promise.all([
+  const [clientTypes, sourceFroms, allStaff] = await Promise.all([
     CLIENTTYPE.find({ isDeleted: false }).select('_id name'),
     SOURCEFROM.find({ isDeleted: false }).select('_id name'),
-    STAFF.find({ isDeleted: false }).select('_id fullName')
+    STAFF.find({ isDeleted: false }).populate('role').select('_id fullName role')
   ]);
+
+  // Filter staff with canAccessAccountMaster permission
+  const staffList = allStaff.filter(staff => staff.role?.canAccessAccountMaster === true);
 
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header

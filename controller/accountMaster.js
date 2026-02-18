@@ -81,6 +81,11 @@ exports.fetchAllAccountMaster = async (req, res) => {
       ],
     };
 
+    // Filter by assignBy if view_own
+    if (req.accountMasterViewType === 'view_own') {
+      query.$and.push({ assignBy: req.user._id });
+    }
+
     const totalRecords = await ACCOUNTMASTER.countDocuments(query);
 
     const accounts = await ACCOUNTMASTER.find(query)

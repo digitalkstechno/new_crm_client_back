@@ -59,11 +59,8 @@ exports.loginStaff = async (req, res) => {
     return res.status(200).json({
       status: "Success",
       message: "Staff logged in successfully",
-      data: staffverify,
       token,
       refreshToken,
-      permissions: staffverify.role.allowedStatuses,
-      canAccessSettings: staffverify.role.canAccessSettings,
     });
   } catch (error) {
     return res.status(400).json({
@@ -237,6 +234,36 @@ exports.staffDelete = async (req, res) => {
     return res.status(200).json({
       status: "Success",
       message: "Staff deleted successfully",
+    });
+  } catch (error) {
+    return res.status(404).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const staff = await STAFF.findById(req.user._id).populate("role");
+    
+    if (!staff) {
+      throw new Error("User not found");
+    }
+
+    return res.status(200).json({
+      status: "Success",
+      data: {
+        id: staff._id,
+        fullName: staff.fullName,
+        email: staff.email,
+        roleName: staff.role.roleName,
+        permissions: staff.role.allowedStatuses,
+        canAccessDashboard: staff.role.canAccessDashboard,
+        canAccessSettings: staff.role.canAccessSettings,
+        canAccessAccountMaster: staff.role.canAccessAccountMaster,
+        accountMasterViewType: staff.role.accountMasterViewType,
+      },
     });
   } catch (error) {
     return res.status(404).json({

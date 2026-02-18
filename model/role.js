@@ -13,6 +13,10 @@ let RoleSchema = new Schema(
       type: String,
       enum: LEAD_STATUSES,
     }],
+    canAccessDashboard: {
+      type: Boolean,
+      default: true,
+    },
     canAccessSettings: {
       type: Boolean,
       default: false,

@@ -468,7 +468,15 @@ exports.getDashboardStats = async (req, res) => {
       leadStatus: { $in: req.permissions },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       ...dateFilter
-    }).select("totalAmount paymentHistory accountMaster leadStatus items").populate("accountMaster").populate({ path: "items.modelSuggestion", populate: { path: "color" } });
+    })
+    .select("totalAmount paymentHistory accountMaster leadStatus items")
+    .populate("accountMaster")
+    .populate({
+      path: "items.modelSuggestion",
+      populate: { path: "color" }
+    })
+    .populate("items.inquiryCategory")
+    .populate("items.customizationType");
 
     let totalRevenue = 0;
     let totalPaid = 0;
@@ -497,7 +505,12 @@ exports.getDashboardStats = async (req, res) => {
 
       lead.items.forEach(item => {
         if (item.modelSuggestion) {
-          const modelKey = `${item.modelSuggestion._id}|${item.modelSuggestion.modelNo}|${item.modelSuggestion.name}|${item.modelSuggestion.color}|${item.inquiryCategory?.name || ''}|${item.customizationType?.name || ''}`;
+          const modelName = item.modelSuggestion.name || '';
+          const modelNo = item.modelSuggestion.modelNo || '';
+          const colorName = item.modelSuggestion.color?.name || '';
+          const inquiryCat = item.inquiryCategory?.name || '';
+          const customType = item.customizationType?.name || '';
+          const modelKey = `${item.modelSuggestion._id}|${modelNo}|${modelName}|${colorName}|${inquiryCat}|${customType}`;
           const qty = parseInt(item.qty || 0);
           if (modelCounts[modelKey]) {
             modelCounts[modelKey] += qty;
@@ -514,9 +527,9 @@ exports.getDashboardStats = async (req, res) => {
       .map(([key, count]) => {
         const [id, modelNo, name, color, inquiryCategory, category] = key.split('|');
         return { 
-          modelNo, 
-          name, 
-          color, 
+          modelNo: modelNo || null, 
+          name: name || null, 
+          color: color || null, 
           inquiryCategory: inquiryCategory || null,
           category: category || null,
           count 

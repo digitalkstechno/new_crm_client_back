@@ -497,7 +497,7 @@ exports.getDashboardStats = async (req, res) => {
 
       lead.items.forEach(item => {
         if (item.modelSuggestion) {
-          const modelKey = `${item.modelSuggestion.name}|${item.modelSuggestion.modelNo}`;
+          const modelKey = `${item.modelSuggestion.modelNo}|${item.modelSuggestion.color}`;
           const qty = parseInt(item.qty || 0);
           if (modelCounts[modelKey]) {
             modelCounts[modelKey] += qty;
@@ -512,8 +512,8 @@ exports.getDashboardStats = async (req, res) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([key, count]) => {
-        const [name, modelNo] = key.split('|');
-        return { name, modelNo, count };
+        const [modelNo, color] = key.split('|');
+        return { modelNo, color, count };
       });
 
     const ACCOUNTMASTER = require("../model/accountMaster");

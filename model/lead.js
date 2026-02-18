@@ -21,11 +21,11 @@ let itemSchema = new Schema(
     gst: {type: String},
     total: {type: String},
     isDone: {type: Boolean, default: false},
-    customizationType: {
+    customizationType: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "CustomizationType",
-      required: true,
-    },
+    }],
+    customizationDescription: String,
     personalization: {
       isPersonalized: {
         type: Boolean,
@@ -33,7 +33,6 @@ let itemSchema = new Schema(
       },
       location: String,
       description: String,
-      name: String,
     },
   },
   { _id: true }

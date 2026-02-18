@@ -3,14 +3,14 @@ let Schema = mongoose.Schema;
 
 let modelSuggestionSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
     modelNo: {
       type: String,
       required: true,
       unique: true,
+    },
+    color: {
+      type: String,
+      required: true,
     },
     rate: {
       type: String,

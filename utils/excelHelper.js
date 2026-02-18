@@ -168,7 +168,7 @@ exports.generateExportExcel = async (accounts) => {
     { header: 'Source From', key: 'sourceFrom', width: 20 },
     { header: 'Assigned To', key: 'assignBy', width: 25 },
     { header: 'Remark', key: 'remark', width: 30 },
-    { header: 'Is Converted', key: 'isConverted', width: 15 },
+    // { header: 'Is Converted', key: 'isConverted', width: 15 },
     { header: 'Created At', key: 'createdAt', width: 20 }
   ];
 
@@ -184,11 +184,11 @@ exports.generateExportExcel = async (accounts) => {
       mobile: account.mobile,
       email: account.email,
       website: account.website,
-      sourcebyTypeOfClient: account.sourcebyTypeOfClient,
-      sourceFrom: account.sourceFrom || '',
+      sourcebyTypeOfClient: account.sourcebyTypeOfClient?.name || '',
+      sourceFrom: account.sourceFrom?.name || '',
       assignBy: account.assignBy?.fullName || '',
       remark: account.remark || '',
-      isConverted: account.isConverted ? 'Yes' : 'No',
+      // isConverted: account.isConverted ? 'Yes' : 'No',
       createdAt: account.createdAt?.toLocaleDateString() || ''
     });
   });

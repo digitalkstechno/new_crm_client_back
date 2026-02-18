@@ -468,7 +468,12 @@ exports.getDashboardStats = async (req, res) => {
       leadStatus: { $in: req.permissions },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       ...dateFilter
-    }).select("totalAmount paymentHistory accountMaster leadStatus items").populate("accountMaster").populate("items.modelSuggestion");
+    })
+    .select("totalAmount paymentHistory accountMaster leadStatus items")
+    .populate("accountMaster")
+    .populate("items.modelSuggestion")
+    .populate("items.inquiryCategory")
+    .populate("items.customizationType");
 
     let totalRevenue = 0;
     let totalPaid = 0;
@@ -497,7 +502,7 @@ exports.getDashboardStats = async (req, res) => {
 
       lead.items.forEach(item => {
         if (item.modelSuggestion) {
-          const modelKey = `${item.modelSuggestion.modelNo}|${item.modelSuggestion.color}`;
+          const modelKey = `${item.modelSuggestion._id}|${item.modelSuggestion.modelNo}|${item.modelSuggestion.name}|${item.modelSuggestion.color}|${item.inquiryCategory?.name || ''}|${item.customizationType?.name || ''}`;
           const qty = parseInt(item.qty || 0);
           if (modelCounts[modelKey]) {
             modelCounts[modelKey] += qty;
@@ -512,8 +517,15 @@ exports.getDashboardStats = async (req, res) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([key, count]) => {
-        const [modelNo, color] = key.split('|');
-        return { modelNo, color, count };
+        const [id, modelNo, name, color, inquiryCategory, category] = key.split('|');
+        return { 
+          modelNo, 
+          name, 
+          color, 
+          inquiryCategory: inquiryCategory || null,
+          category: category || null,
+          count 
+        };
       });
 
     const ACCOUNTMASTER = require("../model/accountMaster");

@@ -96,7 +96,7 @@ exports.fetchAllLeads = async (req, res) => {
         ]
       })
       .populate("items.inquiryCategory")
-      .populate("items.modelSuggestion")
+      .populate({ path: "items.modelSuggestion", populate: { path: "color" } })
       .populate("items.customizationType")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -139,7 +139,7 @@ exports.fetchLeadById = async (req, res) => {
         ]
       })
       .populate("items.inquiryCategory")
-      .populate("items.modelSuggestion")
+      .populate({ path: "items.modelSuggestion", populate: { path: "color" } })
       .populate("items.customizationType");
 
     if (!lead) throw new Error("Lead not found");
@@ -269,7 +269,7 @@ exports.fetchLeadsByStatus = async (req, res) => {
         ]
       })
       .populate("items.inquiryCategory")
-      .populate("items.modelSuggestion")
+      .populate({ path: "items.modelSuggestion", populate: { path: "color" } })
       .populate("items.customizationType")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -468,12 +468,7 @@ exports.getDashboardStats = async (req, res) => {
       leadStatus: { $in: req.permissions },
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       ...dateFilter
-    })
-    .select("totalAmount paymentHistory accountMaster leadStatus items")
-    .populate("accountMaster")
-    .populate("items.modelSuggestion")
-    .populate("items.inquiryCategory")
-    .populate("items.customizationType");
+    }).select("totalAmount paymentHistory accountMaster leadStatus items").populate("accountMaster").populate({ path: "items.modelSuggestion", populate: { path: "color" } });
 
     let totalRevenue = 0;
     let totalPaid = 0;

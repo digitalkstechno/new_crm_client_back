@@ -2,14 +2,13 @@ const MODELSUGGESTION = require("../model/modelSuggestion");
 
 exports.createmodelSuggestion = async (req, res) => {
   try {
-    const { name, modelNo, rate, gst, category } = req.body;
+    const { modelNo, color, rate, gst, category } = req.body;
     let verify = await MODELSUGGESTION.findOne({ modelNo });
     
-    // If exists and is deleted, reactivate it
     if (verify && verify.isDeleted) {
       const reactivated = await MODELSUGGESTION.findByIdAndUpdate(
         verify._id,
-        { name, rate, gst, category, isDeleted: false },
+        { modelNo, color, rate, gst, category, isDeleted: false },
         { new: true }
       );
       return res.status(201).json({
@@ -22,8 +21,8 @@ exports.createmodelSuggestion = async (req, res) => {
     if (verify) throw new Error("Model Suggestion already exists");
 
     const Details = await MODELSUGGESTION.create({
-      name,
       modelNo,
+      color,
       rate,
       gst,
       category,
@@ -68,7 +67,8 @@ exports.fetchAllModelSuggestions = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .populate("category");
+      .populate("category")
+      .populate("color");
 
     return res.status(200).json({
       status: "Success",
@@ -95,7 +95,7 @@ exports.fetchModelsByCategory = async (req, res) => {
     const models = await MODELSUGGESTION.find({ 
       category: categoryId, 
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
-    }).populate('category');
+    }).populate('category').populate('color');
     
     return res.status(200).json({
       status: "Success",
@@ -113,7 +113,7 @@ exports.fetchModelsByCategory = async (req, res) => {
 exports.fetchmodelSuggestionById = async (req, res) => {
   try {
     let modelID = req.params.id;
-    let modelData = await MODELSUGGESTION.findById(modelID).populate('category');
+    let modelData = await MODELSUGGESTION.findById(modelID).populate('category').populate('color');
     if (!modelData) {
       throw new Error("Model Suggestion data not found");
     }

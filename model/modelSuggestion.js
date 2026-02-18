@@ -9,8 +9,9 @@ let modelSuggestionSchema = new Schema(
       unique: true,
     },
     color: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: 'Color'
     },
     rate: {
       type: String,

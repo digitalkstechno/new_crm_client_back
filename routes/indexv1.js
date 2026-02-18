@@ -11,5 +11,6 @@ router.use("/clienttype", require("./clientType"));
 router.use("/sourcefrom", require("./sourceFrom"));
 router.use("/accountmaster", require("./accountMaster"));
 router.use("/lead", require("./lead"));
+router.use("/report", require("./report"));
 
 module.exports = router;

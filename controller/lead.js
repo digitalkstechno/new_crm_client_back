@@ -492,11 +492,12 @@ exports.getDashboardStats = async (req, res) => {
       totalPaid += paid;
       totalPending += pending;
 
-      if (lead.leadStatus === "Final Payment" && pending > 1) {
+      if ((lead.leadStatus === "Final Payment" || lead.leadStatus === "Dispatch" || lead.leadStatus === "Completed") && pending > 1) {
         pendingPaymentLeads.push({
           leadId: lead._id,
           companyName: lead.accountMaster?.companyName,
           clientName: lead.accountMaster?.clientName,
+          leadStatus: lead.leadStatus,
           totalAmount: total.toFixed(2),
           paidAmount: paid.toFixed(2),
           pendingAmount: pending.toFixed(2)
@@ -536,6 +537,33 @@ exports.getDashboardStats = async (req, res) => {
         };
       });
 
+    // Category-wise percentage calculation
+    const categoryCounts = {};
+    let totalItems = 0;
+
+    allLeads.forEach(lead => {
+      lead.items.forEach(item => {
+        if (item.inquiryCategory) {
+          const categoryName = item.inquiryCategory.name || 'Unknown';
+          const qty = parseInt(item.qty || 0);
+          totalItems += qty;
+          if (categoryCounts[categoryName]) {
+            categoryCounts[categoryName] += qty;
+          } else {
+            categoryCounts[categoryName] = qty;
+          }
+        }
+      });
+    });
+
+    const categoryPercentages = Object.entries(categoryCounts)
+      .map(([category, count]) => ({
+        category,
+        count,
+        percentage: totalItems > 0 ? ((count / totalItems) * 100).toFixed(2) : 0
+      }))
+      .sort((a, b) => b.count - a.count);
+
     const ACCOUNTMASTER = require("../model/accountMaster");
     const totalAccounts = await ACCOUNTMASTER.countDocuments({
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
@@ -544,6 +572,33 @@ exports.getDashboardStats = async (req, res) => {
     const convertedAccountIds = [...new Set(allLeads.map(lead => lead.accountMaster?._id?.toString()).filter(Boolean))];
     const convertedCount = convertedAccountIds.length;
     const notConvertedCount = totalAccounts - convertedCount;
+
+    // Upcoming Deliveries (Next 7 Days)
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
+    next7Days.setHours(23, 59, 59, 999);
+
+    const upcomingDeliveries = await LEAD.find({
+      leadStatus: { $in: req.permissions },
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      deliveryDate: {
+        $gte: today,
+        $lte: next7Days
+      }
+    })
+    .populate("accountMaster")
+    .select("accountMaster deliveryDate leadStatus totalAmount")
+    .sort({ deliveryDate: 1 })
+    .limit(20);
+
+    const upcomingDeliveriesData = upcomingDeliveries.map(lead => ({
+      leadId: lead._id,
+      companyName: lead.accountMaster?.companyName,
+      clientName: lead.accountMaster?.clientName,
+      deliveryDate: lead.deliveryDate,
+      leadStatus: lead.leadStatus,
+      totalAmount: parseFloat(lead.totalAmount || 0).toFixed(2)
+    }));
 
     return res.status(200).json({
       status: "Success",
@@ -558,6 +613,8 @@ exports.getDashboardStats = async (req, res) => {
         },
         pendingPaymentLeads,
         topModels,
+        categoryPercentages,
+        upcomingDeliveries: upcomingDeliveriesData,
         accountStats: {
           totalAccounts,
           convertedToLead: convertedCount,

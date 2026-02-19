@@ -30,6 +30,10 @@ let RoleSchema = new Schema(
       enum: ['view_all', 'view_own'],
       default: 'view_own',
     },
+    canAccessProduction: {
+      type: Boolean,
+      default: false,
+    },
     isActive: {
       type: Boolean,
       default: true,

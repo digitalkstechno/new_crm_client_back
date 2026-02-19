@@ -1,4 +1,5 @@
 const LEAD = require("../model/lead");
+const { validatePositiveNumber, validateRequiredField } = require("../utils/validation");
 
 /* =========================
    CREATE LEAD
@@ -19,6 +20,54 @@ exports.createLead = async (req, res) => {
       paymentHistory,
       totalAmount,
     } = req.body;
+
+    // Validation
+    if (!validateRequiredField(leadDate)) {
+      throw new Error("Lead date is required");
+    }
+    if (!validateRequiredField(clientType)) {
+      throw new Error("Client type is required");
+    }
+    if (!validateRequiredField(deliveryDate)) {
+      throw new Error("Delivery date is required");
+    }
+    if (!validateRequiredField(accountMaster)) {
+      throw new Error("Account master is required");
+    }
+    if (!items || items.length === 0) {
+      throw new Error("At least one item is required");
+    }
+    if (shippingCharges && !validatePositiveNumber(shippingCharges)) {
+      throw new Error("Shipping charges must be a positive number");
+    }
+    if (budget && budget.from && !validatePositiveNumber(budget.from)) {
+      throw new Error("Budget from must be a positive number");
+    }
+    if (budget && budget.to && !validatePositiveNumber(budget.to)) {
+      throw new Error("Budget to must be a positive number");
+    }
+    if (budget && budget.from && budget.to && parseFloat(budget.from) > parseFloat(budget.to)) {
+      throw new Error("Budget from cannot be greater than budget to");
+    }
+    
+    // Validate items
+    items.forEach((item, index) => {
+      if (!validateRequiredField(item.inquiryCategory)) {
+        throw new Error(`Item ${index + 1}: Inquiry category is required`);
+      }
+      if (!validateRequiredField(item.modelSuggestion)) {
+        throw new Error(`Item ${index + 1}: Model suggestion is required`);
+      }
+      if (!validatePositiveNumber(item.qty) || parseFloat(item.qty) <= 0) {
+        throw new Error(`Item ${index + 1}: Quantity must be a positive number`);
+      }
+      if (!validatePositiveNumber(item.rate) || parseFloat(item.rate) <= 0) {
+        throw new Error(`Item ${index + 1}: Rate must be a positive number`);
+      }
+      if (!validatePositiveNumber(item.gst) || parseFloat(item.gst) < 0 || parseFloat(item.gst) > 100) {
+        throw new Error(`Item ${index + 1}: GST must be between 0 and 100`);
+      }
+    });
 
     const lead = await LEAD.create({
       leadDate,
@@ -365,7 +414,7 @@ exports.addPayment = async (req, res) => {
     const { id } = req.params;
     const { amount } = req.body;
 
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!validatePositiveNumber(amount) || parseFloat(amount) <= 0) {
       throw new Error("Valid amount is required");
     }
 

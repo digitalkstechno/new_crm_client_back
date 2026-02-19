@@ -2,10 +2,28 @@ const STAFF = require("../model/staff");
 const ROLE = require("../model/role");
 const { encryptData, decryptData } = require("../utils/crypto");
 const jwt = require("jsonwebtoken");
+const { validateEmail, validatePhone, validatePassword, validateRequiredField } = require("../utils/validation");
 
 exports.createStaff = async (req, res) => {
   try {
     const { fullName, email, phone, password, role } = req.body;
+
+    // Validation
+    if (!validateRequiredField(fullName)) {
+      throw new Error("Full name is required");
+    }
+    if (!validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+    if (!validatePhone(phone)) {
+      throw new Error("Phone number must be exactly 10 digits");
+    }
+    if (!validatePassword(password)) {
+      throw new Error("Password must be at least 6 characters");
+    }
+    if (!validateRequiredField(role)) {
+      throw new Error("Role is required");
+    }
 
     let staffFindWithEmail = await STAFF.findOne({ email, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
     if (staffFindWithEmail) throw new Error("Email already exists");
@@ -44,6 +62,15 @@ exports.createStaff = async (req, res) => {
 exports.loginStaff = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Validation
+    if (!validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+    if (!validateRequiredField(password)) {
+      throw new Error("Password is required");
+    }
+    
     let staffverify = await STAFF.findOne({ email }).populate("role");
     if (!staffverify) {
       throw new Error("Staff not found");
@@ -196,11 +223,35 @@ exports.fetchStaffById = async (req, res) => {
 exports.staffUpdate = async (req, res) => {
   try {
     let staffId = req.params.id;
+    const { email, phone, password } = req.body;
+    
     let oldStaff = await STAFF.findById(staffId);
 
     if (!oldStaff) {
       throw new Error("Staff not found");
     }
+    
+    // Validation
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+    if (phone && !validatePhone(phone)) {
+      throw new Error("Phone number must be exactly 10 digits");
+    }
+    if (password && !validatePassword(password)) {
+      throw new Error("Password must be at least 6 characters");
+    }
+    
+    // Check for duplicate email/phone if changed
+    if (email && email !== oldStaff.email) {
+      const existingEmail = await STAFF.findOne({ email, isDeleted: false, _id: { $ne: staffId } });
+      if (existingEmail) throw new Error("Email already exists");
+    }
+    if (phone && phone !== oldStaff.phone) {
+      const existingPhone = await STAFF.findOne({ phone, isDeleted: false, _id: { $ne: staffId } });
+      if (existingPhone) throw new Error("Phone number already exists");
+    }
+    
     if (req.body.password) {
       req.body.password = encryptData(req.body.password);
     }
@@ -263,6 +314,7 @@ exports.getCurrentUser = async (req, res) => {
         canAccessSettings: staff.role.canAccessSettings,
         canAccessAccountMaster: staff.role.canAccessAccountMaster,
         accountMasterViewType: staff.role.accountMasterViewType,
+        canAccessProduction: staff.role.canAccessProduction,
       },
     });
   } catch (error) {

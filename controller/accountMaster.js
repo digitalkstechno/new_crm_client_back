@@ -1,6 +1,7 @@
 const ACCOUNTMASTER = require("../model/accountMaster");
 const STAFF = require("../model/staff");
 const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
+const { validateEmail, validatePhone, validateWebsite, validateRequiredField } = require("../utils/validation");
 
 exports.createAccountMaster = async (req, res) => {
   try {
@@ -16,6 +17,26 @@ exports.createAccountMaster = async (req, res) => {
       assignBy,
       remark,
     } = req.body;
+
+    // Validation
+    if (!validateRequiredField(companyName)) {
+      throw new Error("Company name is required");
+    }
+    if (!validateRequiredField(clientName)) {
+      throw new Error("Client name is required");
+    }
+    if (!validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+    if (!validatePhone(mobile)) {
+      throw new Error("Mobile number must be exactly 10 digits");
+    }
+    if (website && !validateWebsite(website)) {
+      throw new Error("Invalid website URL");
+    }
+    if (!validateRequiredField(sourcebyTypeOfClient)) {
+      throw new Error("Type of client is required");
+    }
 
     const verify = await ACCOUNTMASTER.findOne({
       $and: [
@@ -158,9 +179,31 @@ exports.fetchAccountMasterById = async (req, res) => {
 exports.updateAccountMaster = async (req, res) => {
   try {
     const id = req.params.id;
+    const { email, mobile, website } = req.body;
+
+    // Validation
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+    if (mobile && !validatePhone(mobile)) {
+      throw new Error("Mobile number must be exactly 10 digits");
+    }
+    if (website && !validateWebsite(website)) {
+      throw new Error("Invalid website URL");
+    }
 
     const oldAccount = await ACCOUNTMASTER.findById(id);
     if (!oldAccount) throw new Error("Account Master not found");
+
+    // Check for duplicate email/mobile if changed
+    if (email && email !== oldAccount.email) {
+      const existingEmail = await ACCOUNTMASTER.findOne({ email, isDeleted: false, _id: { $ne: id } });
+      if (existingEmail) throw new Error("Email already exists");
+    }
+    if (mobile && mobile !== oldAccount.mobile) {
+      const existingMobile = await ACCOUNTMASTER.findOne({ mobile, isDeleted: false, _id: { $ne: id } });
+      if (existingMobile) throw new Error("Mobile number already exists");
+    }
 
     const updatedAccount = await ACCOUNTMASTER.findByIdAndUpdate(
       id,

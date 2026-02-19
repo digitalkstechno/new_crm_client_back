@@ -13,5 +13,6 @@ router.use("/sourcefrom", require("./sourceFrom"));
 router.use("/accountmaster", require("./accountMaster"));
 router.use("/lead", require("./lead"));
 router.use("/report", require("./report"));
+router.use("/production", require("./production"));
 
 module.exports = router;

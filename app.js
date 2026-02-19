@@ -12,7 +12,14 @@ var logger = require("morgan");
 var indexRouter = require("./routes/indexv1.js");
 
 var app = express();
-app.use(cors());
+
+// CORS Configuration - Security Fix
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));

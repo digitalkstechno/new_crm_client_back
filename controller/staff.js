@@ -3,6 +3,7 @@ const ROLE = require("../model/role");
 const { encryptData, decryptData } = require("../utils/crypto");
 const jwt = require("jsonwebtoken");
 const { validateEmail, validatePhone, validatePassword, validateRequiredField } = require("../utils/validation");
+const { sanitizeQuery } = require("../utils/sanitize");
 
 exports.createStaff = async (req, res) => {
   try {
@@ -61,7 +62,17 @@ exports.createStaff = async (req, res) => {
 
 exports.loginStaff = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    
+    // Sanitize input - prevent NoSQL injection
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      throw new Error("Invalid input format");
+    }
+    
+    // Sanitize to remove MongoDB operators
+    const sanitizedBody = sanitizeQuery({ email, password });
+    email = sanitizedBody.email ? sanitizedBody.email.trim().toLowerCase() : '';
+    password = sanitizedBody.password || '';
     
     // Validation
     if (!validateEmail(email)) {
@@ -135,7 +146,8 @@ exports.fetchAllStaffs = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const search = req.query.search || "";
+    const sanitizedQuery = sanitizeQuery(req.query);
+    const search = sanitizedQuery.search || "";
 
     const query = {
       $and: [

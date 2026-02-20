@@ -262,12 +262,29 @@ exports.downloadSampleExcel = async (req, res) => {
 
 exports.exportAccountMaster = async (req, res) => {
   try {
+    const noLeadsOnly = req.query.noLeadsOnly === "true";
+    
     const accounts = await ACCOUNTMASTER.find({ isDeleted: false })
       .populate('assignBy')
       .populate('sourcebyTypeOfClient')
       .populate('sourceFrom')
       .sort({ createdAt: -1 });
-    const workbook = await generateExportExcel(accounts);
+    
+    let filteredAccounts = accounts;
+    if (noLeadsOnly) {
+      const LEAD = require("../model/lead");
+      const accountsWithLeadCount = await Promise.all(
+        accounts.map(async (account) => {
+          const leadCount = await LEAD.countDocuments({ accountMaster: account._id });
+          return { account, leadCount };
+        })
+      );
+      filteredAccounts = accountsWithLeadCount
+        .filter(item => item.leadCount === 0)
+        .map(item => item.account);
+    }
+    
+    const workbook = await generateExportExcel(filteredAccounts);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Export.xlsx');
     await workbook.xlsx.write(res);

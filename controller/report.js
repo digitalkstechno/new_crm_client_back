@@ -78,7 +78,10 @@ exports.downloadLeadItemsReport = async (req, res) => {
     const leads = await LEAD.find(query)
       .populate("accountMaster")
       .populate("items.inquiryCategory")
-      .populate("items.modelSuggestion")
+      .populate({
+        path: "items.modelSuggestion",
+        populate: { path: "color" }
+      })
       .populate("items.customizationType")
       .sort({ createdAt: -1 });
 

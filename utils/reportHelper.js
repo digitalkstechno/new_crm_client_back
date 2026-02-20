@@ -86,6 +86,10 @@ exports.generateLeadItemsReport = async (leads) => {
 
   leads.forEach(lead => {
     (lead.items || []).forEach(item => {
+      const customizationTypes = Array.isArray(item.customizationType) 
+        ? item.customizationType.map(ct => ct.name || ct).join(', ') 
+        : (item.customizationType?.name || item.customizationType || '');
+      
       sheet.addRow({
         leadId: lead._id.toString(),
         companyName: lead.accountMaster?.companyName || '',
@@ -93,7 +97,7 @@ exports.generateLeadItemsReport = async (leads) => {
         category: item.inquiryCategory?.name || '',
         modelNo: item.modelSuggestion?.modelNo || '',
         color: typeof item.modelSuggestion?.color === 'object' ? item.modelSuggestion?.color?.name : item.modelSuggestion?.color || '',
-        customization: item.customizationType?.name || '',
+        customization: customizationTypes,
         qty: item.qty || '',
         rate: item.rate || '',
         gst: item.gst || '',

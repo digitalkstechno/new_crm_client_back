@@ -586,32 +586,37 @@ exports.getDashboardStats = async (req, res) => {
         };
       });
 
-    // Category-wise percentage calculation
-    const categoryCounts = {};
-    let totalItems = 0;
+    // Category-wise average rate calculation
+    const categoryData = {};
 
     allLeads.forEach(lead => {
       lead.items.forEach(item => {
         if (item.inquiryCategory) {
           const categoryName = item.inquiryCategory.name || 'Unknown';
           const qty = parseInt(item.qty || 0);
-          totalItems += qty;
-          if (categoryCounts[categoryName]) {
-            categoryCounts[categoryName] += qty;
+          const rate = parseFloat(item.rate || 0);
+          const totalPrice = qty * rate;
+          if (categoryData[categoryName]) {
+            categoryData[categoryName].totalPrice += totalPrice;
+            categoryData[categoryName].totalUnits += qty;
           } else {
-            categoryCounts[categoryName] = qty;
+            categoryData[categoryName] = { totalPrice, totalUnits: qty };
           }
         }
       });
     });
 
-    const categoryPercentages = Object.entries(categoryCounts)
-      .map(([category, count]) => ({
-        category,
-        count,
-        percentage: totalItems > 0 ? ((count / totalItems) * 100).toFixed(2) : 0
-      }))
-      .sort((a, b) => b.count - a.count);
+    const categoryPercentages = Object.entries(categoryData)
+      .map(([category, data]) => {
+        const avgRate = data.totalUnits > 0 ? data.totalPrice / data.totalUnits : 0;
+        return {
+          category,
+          count: data.totalUnits,
+          avgRate: parseFloat(avgRate.toFixed(2)),
+          percentage: 0
+        };
+      })
+      .sort((a, b) => b.avgRate - a.avgRate);
 
     const ACCOUNTMASTER = require("../model/accountMaster");
     const totalAccounts = await ACCOUNTMASTER.countDocuments({

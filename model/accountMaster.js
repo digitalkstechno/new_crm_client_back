@@ -24,16 +24,13 @@ let accountMasterSchema = new Schema(
     },
     email: {
       type: String,
-      required: true,
     },
     website: {
       type: String,
-      required: true,
     },
     sourcebyTypeOfClient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ClientType",
-      required: true,
     },
     sourceFrom: {
       type: mongoose.Schema.Types.ObjectId,

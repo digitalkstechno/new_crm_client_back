@@ -11,9 +11,11 @@ const {
   deleteAccountMaster,
   downloadSampleExcel,
   exportAccountMaster,
-  importAccountMaster
+  importAccountMaster,
+  createPublicAccountMaster
 } = require("../controller/accountMaster");
 
+router.post("/public", createPublicAccountMaster);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);
 router.post("/import", authMiddleware, upload.single('file'), importAccountMaster);

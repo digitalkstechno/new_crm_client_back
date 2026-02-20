@@ -370,3 +370,54 @@ exports.importAccountMaster = async (req, res) => {
     return res.status(500).json({ status: "Fail", message: error.message });
   }
 };
+
+exports.createPublicAccountMaster = async (req, res) => {
+  try {
+    const { companyName, clientName, mobile, email, website, address } = req.body;
+
+    if (!companyName || !clientName || !mobile) {
+      throw new Error("Company Name, Client Name, and Mobile are required");
+    }
+
+    if (!validatePhone(mobile)) {
+      throw new Error("Mobile number must be exactly 10 digits");
+    }
+
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+
+    if (website && !validateWebsite(website)) {
+      throw new Error("Invalid website URL");
+    }
+
+    const verify = await ACCOUNTMASTER.findOne({
+      $and: [
+        { $or: [{ email }, { mobile }] },
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+      ],
+    });
+
+    if (verify) throw new Error("Account already exists with this email or mobile");
+
+    const account = await ACCOUNTMASTER.create({
+      companyName,
+      clientName,
+      address,
+      mobile,
+      email,
+      website,
+    });
+
+    return res.status(201).json({
+      status: "Success",
+      message: "Form submitted successfully",
+      data: account,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};

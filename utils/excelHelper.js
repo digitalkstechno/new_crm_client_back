@@ -16,10 +16,10 @@ exports.generateSampleExcel = async () => {
     { header: 'City', key: 'cityName', width: 15 },
     { header: 'State', key: 'stateName', width: 15 },
     { header: 'Country', key: 'countryName', width: 15 },
-    { header: 'Mobile*', key: 'mobile', width: 15 },
-    { header: 'Email*', key: 'email', width: 25 },
-    { header: 'Website*', key: 'website', width: 25 },
-    { header: 'Source Type* (See dropdown)', key: 'sourcebyTypeOfClient', width: 30 },
+    { header: 'Mobile', key: 'mobile', width: 15 },
+    { header: 'Email', key: 'email', width: 25 },
+    { header: 'Website', key: 'website', width: 25 },
+    { header: 'Source Type (See dropdown)', key: 'sourcebyTypeOfClient', width: 30 },
     { header: 'Source From (See dropdown)', key: 'sourceFrom', width: 30 },
     { header: 'Assign By (See dropdown)', key: 'assignBy', width: 30 },
     { header: 'Remark', key: 'remark', width: 30 }
@@ -61,15 +61,14 @@ exports.generateSampleExcel = async () => {
 
   // Add dropdowns for Source Type (Column K - 11)
   const clientTypeNames = clientTypes.map(ct => ct.name);
-  for (let i = 2; i <= 100; i++) {
-    sheet.getCell(`K${i}`).dataValidation = {
-      type: 'list',
-      allowBlank: false,
-      formulae: [`"${clientTypeNames.join(',')}"`],
-      showErrorMessage: true,
-      errorTitle: 'Invalid Source Type',
-      error: 'Please select from dropdown'
-    };
+  if (clientTypeNames.length > 0) {
+    for (let i = 2; i <= 100; i++) {
+      sheet.getCell(`K${i}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`"${clientTypeNames.join(',')}"`]
+      };
+    }
   }
 
   // Add dropdowns for Source From (Column L - 12)
@@ -229,6 +228,28 @@ exports.parseImportExcel = async (buffer) => {
     const sourceFrom = sourceFroms.find(sf => sf.name === sourceFromName);
     const staff = staffList.find(s => s.fullName === assignByName);
 
+    // Clean email and website
+    let email = row.getCell(9).value;
+    if (email && typeof email === 'object') {
+      if (email.text) {
+        email = email.text;
+      } else if (email.richText) {
+        email = email.richText.map(function(rt) { return rt.text; }).join('');
+      }
+    }
+    if (email && typeof email === 'string' && email.startsWith('mailto:')) {
+      email = email.replace('mailto:', '');
+    }
+
+    let website = row.getCell(10).value;
+    if (website && typeof website === 'object') {
+      if (website.text) {
+        website = website.text;
+      } else if (website.richText) {
+        website = website.richText.map(function(rt) { return rt.text; }).join('');
+      }
+    }
+
     const rowData = {
       companyName: row.getCell(1).value,
       clientName: row.getCell(2).value,
@@ -239,23 +260,18 @@ exports.parseImportExcel = async (buffer) => {
         stateName: row.getCell(6).value || '',
         countryName: row.getCell(7).value || ''
       },
-      mobile: row.getCell(8).value?.toString(),
-      email: row.getCell(9).value,
-      website: row.getCell(10).value,
+      mobile: row.getCell(8).value?.toString() || '',
+      email: email || '',
+      website: website || '',
       sourcebyTypeOfClient: clientType?._id,
       sourceFrom: sourceFrom?._id,
       assignBy: staff?._id,
       remark: row.getCell(14).value || ''
     };
 
-    // Validation
-    if (!rowData.companyName || !rowData.clientName || !rowData.mobile || !rowData.email || !rowData.website) {
-      errors.push(`Row ${rowNumber}: Missing required fields`);
-      return;
-    }
-
-    if (!rowData.sourcebyTypeOfClient) {
-      errors.push(`Row ${rowNumber}: Invalid Source Type`);
+    // Validation - only company and client name required
+    if (!rowData.companyName || !rowData.clientName) {
+      errors.push(`Row ${rowNumber}: Company Name and Client Name are required`);
       return;
     }
 

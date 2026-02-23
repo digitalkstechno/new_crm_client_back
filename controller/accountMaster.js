@@ -310,26 +310,6 @@ exports.importAccountMaster = async (req, res) => {
       try {
         const accountData = accounts[i];
         
-        // Check duplicate
-        const existing = await ACCOUNTMASTER.findOne({
-          $and: [
-            { $or: [{ email: accountData.email }, { mobile: accountData.mobile }] },
-            { isDeleted: false }
-          ]
-        });
-
-        if (existing) {
-          results.failed++;
-          const errorMsg = "Duplicate email or mobile";
-          results.errors.push(`Row ${i + 2}: ${errorMsg}`);
-          results.failedRecords.push({
-            rowNumber: i + 2,
-            ...accountData,
-            issue: errorMsg
-          });
-          continue;
-        }
-
         let assignBy = null;
         if (accountData.assignBy) {
           assignBy = accountData.assignBy;

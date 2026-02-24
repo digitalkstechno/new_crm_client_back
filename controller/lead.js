@@ -37,7 +37,7 @@ exports.createLead = async (req, res) => {
     if (!items || items.length === 0) {
       throw new Error("At least one item is required");
     }
-    if (shippingCharges && !validatePositiveNumber(shippingCharges)) {
+    if (shippingCharges && shippingCharges !== 0 && !validatePositiveNumber(shippingCharges)) {
       throw new Error("Shipping charges must be a positive number");
     }
     if (budget && budget.from && !validatePositiveNumber(budget.from)) {
@@ -527,21 +527,36 @@ exports.getDashboardStats = async (req, res) => {
     .populate("items.inquiryCategory")
     .populate("items.customizationType");
 
+    // Separate leads for pending calculation (only Dispatch, Completed, Final Payment)
+    const pendingStatusLeads = allLeads.filter(lead => 
+      lead.leadStatus === "Dispatch" || 
+      lead.leadStatus === "Completed" || 
+      lead.leadStatus === "Final Payment"
+    );
+
+    // Separate leads for top models and category (only Completed)
+    const completedLeads = allLeads.filter(lead => lead.leadStatus === "Completed");
+
     let totalRevenue = 0;
     let totalPaid = 0;
     let totalPending = 0;
     const pendingPaymentLeads = [];
     const modelCounts = {};
 
+    // Calculate total paid from all leads
     allLeads.forEach(lead => {
+      const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      totalPaid += paid;
+    });
+
+    // Calculate pending only from Dispatch, Completed, Final Payment status
+    pendingStatusLeads.forEach(lead => {
       const total = parseFloat(lead.totalAmount || 0);
       const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const pending = total - paid;
-      totalRevenue += total;
-      totalPaid += paid;
       totalPending += pending;
 
-      if ((lead.leadStatus === "Final Payment" || lead.leadStatus === "Dispatch" || lead.leadStatus === "Completed") && pending > 1) {
+      if (pending > 1) {
         pendingPaymentLeads.push({
           leadId: lead._id,
           companyName: lead.accountMaster?.companyName,
@@ -552,7 +567,13 @@ exports.getDashboardStats = async (req, res) => {
           pendingAmount: pending.toFixed(2)
         });
       }
+    });
 
+    // Total Revenue = Total Paid + Total Pending
+    totalRevenue = totalPaid + totalPending;
+
+    // Count models only from Completed status
+    completedLeads.forEach(lead => {
       lead.items.forEach(item => {
         if (item.modelSuggestion) {
           const modelName = item.modelSuggestion.name || '';
@@ -586,10 +607,10 @@ exports.getDashboardStats = async (req, res) => {
         };
       });
 
-    // Category-wise average rate calculation
+    // Category-wise average rate calculation (only Completed status)
     const categoryData = {};
 
-    allLeads.forEach(lead => {
+    completedLeads.forEach(lead => {
       lead.items.forEach(item => {
         if (item.inquiryCategory) {
           const categoryName = item.inquiryCategory.name || 'Unknown';
@@ -708,19 +729,34 @@ exports.getGraphData = async (req, res) => {
       ...dateFilter
     }).select("totalAmount paymentHistory leadStatus accountMaster createdAt");
 
+    // Separate leads for pending calculation (only Dispatch, Completed, Final Payment)
+    const pendingStatusLeads = allLeads.filter(lead => 
+      lead.leadStatus === "Dispatch" || 
+      lead.leadStatus === "Completed" || 
+      lead.leadStatus === "Final Payment"
+    );
+
     // Payment Stats Graph Data
     let totalRevenue = 0;
     let totalPaid = 0;
     let totalPending = 0;
 
+    // Calculate total paid from all leads
     allLeads.forEach(lead => {
+      const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      totalPaid += paid;
+    });
+
+    // Calculate pending only from Dispatch, Completed, Final Payment status
+    pendingStatusLeads.forEach(lead => {
       const total = parseFloat(lead.totalAmount || 0);
       const paid = (lead.paymentHistory || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
       const pending = total - paid;
-      totalRevenue += total;
-      totalPaid += paid;
       totalPending += pending;
     });
+
+    // Total Revenue = Total Paid + Total Pending
+    totalRevenue = totalPaid + totalPending;
 
     const paymentGraphData = [
       { label: "Total Revenue", value: parseFloat(totalRevenue.toFixed(2)), color: "#10b981" },

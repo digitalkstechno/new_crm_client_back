@@ -3,7 +3,7 @@ const MODELSUGGESTION = require("../model/modelSuggestion");
 exports.createmodelSuggestion = async (req, res) => {
   try {
     const { modelNo, color, rate, gst, category } = req.body;
-    let verify = await MODELSUGGESTION.findOne({ modelNo });
+    let verify = await MODELSUGGESTION.findOne({ modelNo, color, category });
     
     if (verify && verify.isDeleted) {
       const reactivated = await MODELSUGGESTION.findByIdAndUpdate(

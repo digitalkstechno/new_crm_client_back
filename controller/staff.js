@@ -327,6 +327,8 @@ exports.getCurrentUser = async (req, res) => {
         canAccessAccountMaster: staff.role.canAccessAccountMaster,
         accountMasterViewType: staff.role.accountMasterViewType,
         canAccessProduction: staff.role.canAccessProduction,
+        canAccessLeads: staff.role.canAccessLeads,
+        canAccessReports: staff.role.canAccessReports,
       },
     });
   } catch (error) {

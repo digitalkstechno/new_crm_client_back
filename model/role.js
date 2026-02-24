@@ -15,7 +15,7 @@ let RoleSchema = new Schema(
     }],
     canAccessDashboard: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     canAccessSettings: {
       type: Boolean,
@@ -31,6 +31,14 @@ let RoleSchema = new Schema(
       default: 'view_own',
     },
     canAccessProduction: {
+      type: Boolean,
+      default: false,
+    },
+    canAccessLeads: {
+      type: Boolean,
+      default: false,
+    },
+    canAccessReports: {
       type: Boolean,
       default: false,
     },

@@ -3,7 +3,7 @@ const { LEAD_STATUSES } = require("../constants/leadStatus");
 
 exports.createRole = async (req, res) => {
   try {
-    const { roleName, allowedStatuses, canAccessSettings, canAccessAccountMaster, accountMasterViewType, canAccessProduction } = req.body;
+    const { roleName, allowedStatuses, canAccessSettings, canAccessAccountMaster, accountMasterViewType, canAccessProduction, canAccessLeads, canAccessReports } = req.body;
 
     const existingRole = await ROLE.findOne({ roleName });
     
@@ -17,6 +17,8 @@ exports.createRole = async (req, res) => {
           canAccessAccountMaster,
           accountMasterViewType,
           canAccessProduction,
+          canAccessLeads,
+          canAccessReports,
           isDeleted: false 
         },
         { new: true }
@@ -37,7 +39,9 @@ exports.createRole = async (req, res) => {
       canAccessSettings,
       canAccessAccountMaster,
       accountMasterViewType,
-      canAccessProduction
+      canAccessProduction,
+      canAccessLeads,
+      canAccessReports
     });
 
     return res.status(201).json({

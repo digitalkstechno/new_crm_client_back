@@ -9,7 +9,6 @@ let accountMasterSchema = new Schema(
     },
     clientName: {
       type: String,
-      required: true,
     },
     address: {
       line1: String,

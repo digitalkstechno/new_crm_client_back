@@ -18,47 +18,45 @@ exports.createAccountMaster = async (req, res) => {
       remark,
     } = req.body;
 
-    // Validation
+    // Validation - Only Company Name and Mobile are required
     if (!validateRequiredField(companyName)) {
       throw new Error("Company name is required");
-    }
-    if (!validateRequiredField(clientName)) {
-      throw new Error("Client name is required");
-    }
-    if (!validateEmail(email)) {
-      throw new Error("Invalid email address");
     }
     if (!validatePhone(mobile)) {
       throw new Error("Mobile number must be exactly 10 digits");
     }
+    
+    // Optional field validations
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
     if (website && !validateWebsite(website)) {
       throw new Error("Invalid website URL");
     }
-    if (!validateRequiredField(sourcebyTypeOfClient)) {
-      throw new Error("Type of client is required");
-    }
 
+    // Check for duplicate mobile
     const verify = await ACCOUNTMASTER.findOne({
-      $and: [
-        { $or: [{ email }, { mobile }] },
-        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
-      ],
+      mobile,
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
     });
 
-    if (verify) throw new Error("Account already exists with this email or mobile");
+    if (verify) throw new Error("Account already exists with this mobile number");
 
-    const account = await ACCOUNTMASTER.create({
+    // Prepare data - convert empty strings to null for ObjectId fields
+    const accountData = {
       companyName,
-      clientName,
+      clientName: clientName || null,
       address,
       mobile,
-      email,
-      website,
-      sourcebyTypeOfClient,
-      sourceFrom,
-      assignBy,
-      remark,
-    });
+      email: email || null,
+      website: website || null,
+      sourcebyTypeOfClient: sourcebyTypeOfClient || null,
+      sourceFrom: sourceFrom || null,
+      assignBy: assignBy || null,
+      remark: remark || null,
+    };
+
+    const account = await ACCOUNTMASTER.create(accountData);
 
     const populatedAccount = await ACCOUNTMASTER.findById(account._id)
       .populate("assignBy")

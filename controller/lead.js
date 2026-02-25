@@ -28,9 +28,6 @@ exports.createLead = async (req, res) => {
     if (!validateRequiredField(clientType)) {
       throw new Error("Client type is required");
     }
-    if (!validateRequiredField(deliveryDate)) {
-      throw new Error("Delivery date is required");
-    }
     if (!validateRequiredField(accountMaster)) {
       throw new Error("Account master is required");
     }

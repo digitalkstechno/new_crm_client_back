@@ -228,45 +228,55 @@ exports.parseImportExcel = async (buffer) => {
     const sourceFrom = sourceFroms.find(sf => sf.name === sourceFromName);
     const staff = staffList.find(s => s.fullName === assignByName);
 
-    // Clean email and website
-    let email = row.getCell(9).value;
-    if (email && typeof email === 'object') {
-      if (email.text) {
-        email = email.text;
-      } else if (email.richText) {
-        email = email.richText.map(function(rt) { return rt.text; }).join('');
+    // Helper function to extract text from Excel cell values
+    const extractText = (cellValue) => {
+      if (!cellValue) return '';
+      if (typeof cellValue === 'string') return cellValue;
+      if (typeof cellValue === 'number') return cellValue.toString();
+      if (typeof cellValue === 'object') {
+        // Handle nested text.richText structure
+        if (cellValue.text && typeof cellValue.text === 'object' && cellValue.text.richText) {
+          return cellValue.text.richText.map(function(rt) { return rt.text; }).join('');
+        }
+        if (cellValue.text && typeof cellValue.text === 'string') return cellValue.text;
+        if (cellValue.richText) {
+          return cellValue.richText.map(function(rt) { return rt.text; }).join('');
+        }
+        if (cellValue.hyperlink) return cellValue.hyperlink;
       }
-    }
-    if (email && typeof email === 'string' && email.startsWith('mailto:')) {
+      return String(cellValue);
+    };
+
+    // Extract all cell values as text
+    let companyName = extractText(row.getCell(1).value);
+    let clientName = extractText(row.getCell(2).value);
+    let email = extractText(row.getCell(9).value);
+    let website = extractText(row.getCell(10).value);
+
+    // Clean email - remove mailto: prefix
+    if (email && email.startsWith('mailto:')) {
       email = email.replace('mailto:', '');
     }
-
-    let website = row.getCell(10).value;
-    if (website && typeof website === 'object') {
-      if (website.text) {
-        website = website.text;
-      } else if (website.richText) {
-        website = website.richText.map(function(rt) { return rt.text; }).join('');
-      }
-    }
+    email = email ? String(email).trim() : '';
+    website = website ? String(website).trim() : '';
 
     const rowData = {
-      companyName: row.getCell(1).value,
-      clientName: row.getCell(2).value,
+      companyName: companyName || '',
+      clientName: clientName || '',
       address: {
-        line1: row.getCell(3).value || '',
-        line2: row.getCell(4).value || '',
-        cityName: row.getCell(5).value || '',
-        stateName: row.getCell(6).value || '',
-        countryName: row.getCell(7).value || ''
+        line1: extractText(row.getCell(3).value) || '',
+        line2: extractText(row.getCell(4).value) || '',
+        cityName: extractText(row.getCell(5).value) || '',
+        stateName: extractText(row.getCell(6).value) || '',
+        countryName: extractText(row.getCell(7).value) || ''
       },
-      mobile: row.getCell(8).value?.toString() || '',
+      mobile: extractText(row.getCell(8).value) || '',
       email: email || '',
       website: website || '',
-      sourcebyTypeOfClient: clientType?._id,
-      sourceFrom: sourceFrom?._id,
-      assignBy: staff?._id,
-      remark: row.getCell(14).value || ''
+      sourcebyTypeOfClient: clientType?._id || null,
+      sourceFrom: sourceFrom?._id || null,
+      assignBy: staff?._id || null,
+      remark: extractText(row.getCell(14).value) || ''
     };
 
     // Validation - only company and client name required

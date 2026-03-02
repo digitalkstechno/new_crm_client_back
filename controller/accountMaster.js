@@ -1,5 +1,6 @@
 const ACCOUNTMASTER = require("../model/accountMaster");
 const STAFF = require("../model/staff");
+const ExcelJS = require('exceljs');
 const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
 const { validateEmail, validatePhone, validateWebsite, validateRequiredField } = require("../utils/validation");
 
@@ -308,6 +309,18 @@ exports.importAccountMaster = async (req, res) => {
       try {
         const accountData = accounts[i];
         
+        // Check for duplicate mobile number
+        if (accountData.mobile) {
+          const existingAccount = await ACCOUNTMASTER.findOne({
+            mobile: accountData.mobile,
+            $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+          });
+          
+          if (existingAccount) {
+            throw new Error(`Mobile number ${accountData.mobile} already exists`);
+          }
+        }
+        
         let assignBy = null;
         if (accountData.assignBy) {
           assignBy = accountData.assignBy;
@@ -337,6 +350,38 @@ exports.importAccountMaster = async (req, res) => {
           issue: errorMsg
         });
       }
+    }
+
+    // Generate error Excel if there are failed records
+    if (results.failedRecords.length > 0) {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Failed Records');
+      
+      sheet.columns = [
+        { header: 'Row Number', key: 'rowNumber', width: 12 },
+        { header: 'Company Name', key: 'companyName', width: 25 },
+        { header: 'Client Name', key: 'clientName', width: 20 },
+        { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Error', key: 'issue', width: 50 }
+      ];
+      
+      results.failedRecords.forEach(record => {
+        sheet.addRow({
+          rowNumber: record.rowNumber,
+          companyName: record.companyName,
+          clientName: record.clientName,
+          mobile: record.mobile,
+          email: record.email,
+          issue: record.issue
+        });
+      });
+      
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      results.errorFile = buffer.toString('base64');
     }
 
     return res.status(200).json({

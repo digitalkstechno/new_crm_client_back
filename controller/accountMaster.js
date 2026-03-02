@@ -92,7 +92,7 @@ exports.fetchAllAccountMaster = async (req, res) => {
           $or: [
             { companyName: { $regex: search, $options: "i" } },
             { clientName: { $regex: search, $options: "i" } },
-            { mobile: { $regex: search, $options: "i" } },
+            { mobile: { $regex: search } },
             { email: { $regex: search, $options: "i" } },
             { website: { $regex: search, $options: "i" } },
           ],
@@ -298,51 +298,74 @@ exports.importAccountMaster = async (req, res) => {
 
     const { accounts, errors: parseErrors } = await parseImportExcel(req.file.buffer);
 
-    if (parseErrors.length > 0) {
-      return res.status(400).json({ status: "Fail", message: "Validation errors", errors: parseErrors });
-    }
-
-    const results = { success: 0, failed: 0, errors: [], failedRecords: [] };
+    const successRecords = [];
+    const errorRecords = [];
 
     for (let i = 0; i < accounts.length; i++) {
-      try {
-        const accountData = accounts[i];
-        
-        let assignBy = null;
-        if (accountData.assignBy) {
-          assignBy = accountData.assignBy;
-        }
+      const accountData = accounts[i];
+      
+      // Check if mobile already exists
+      const existingAccount = await ACCOUNTMASTER.findOne({
+        mobile: accountData.mobile,
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      });
 
-        await ACCOUNTMASTER.create({
+      if (existingAccount) {
+        errorRecords.push({
           companyName: accountData.companyName,
           clientName: accountData.clientName,
-          address: accountData.address,
           mobile: accountData.mobile,
           email: accountData.email,
-          website: accountData.website,
-          sourcebyTypeOfClient: accountData.sourcebyTypeOfClient,
-          sourceFrom: accountData.sourceFrom,
-          assignBy: assignBy,
-          remark: accountData.remark
+          error: "Mobile number already exists"
         });
+        continue;
+      }
 
-        results.success++;
+      try {
+        await ACCOUNTMASTER.create(accountData);
+        successRecords.push(accountData);
       } catch (err) {
-        results.failed++;
-        const errorMsg = err.message;
-        results.errors.push(`Row ${i + 2}: ${errorMsg}`);
-        results.failedRecords.push({
-          rowNumber: i + 2,
-          ...accounts[i],
-          issue: errorMsg
+        errorRecords.push({
+          companyName: accountData.companyName,
+          clientName: accountData.clientName,
+          mobile: accountData.mobile,
+          email: accountData.email,
+          error: err.message
         });
       }
     }
 
+    // Generate error Excel if there are errors
+    if (errorRecords.length > 0) {
+      const ExcelJS = require('exceljs');
+      const errorWorkbook = new ExcelJS.Workbook();
+      const errorSheet = errorWorkbook.addWorksheet('Errors');
+      
+      errorSheet.columns = [
+        { header: 'Company Name', key: 'companyName', width: 25 },
+        { header: 'Client Name', key: 'clientName', width: 20 },
+        { header: 'Mobile', key: 'mobile', width: 15 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Error', key: 'error', width: 40 }
+      ];
+
+      errorRecords.forEach(record => {
+        errorSheet.addRow(record);
+      });
+
+      errorSheet.getRow(1).font = { bold: true };
+      errorSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=Import_Errors.xlsx');
+      await errorWorkbook.xlsx.write(res);
+      return res.end();
+    }
+
     return res.status(200).json({
       status: "Success",
-      message: `Import completed. Success: ${results.success}, Failed: ${results.failed}`,
-      data: results
+      message: `${successRecords.length} records imported successfully`,
+      data: { successCount: successRecords.length, errorCount: errorRecords.length }
     });
   } catch (error) {
     return res.status(500).json({ status: "Fail", message: error.message });

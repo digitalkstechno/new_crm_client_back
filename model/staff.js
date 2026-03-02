@@ -28,9 +28,9 @@ let StaffSchema = new Schema(
       unique: true,
       validate: {
         validator: function(v) {
-          return /^[0-9]{10}$/.test(v.replace(/\s/g, ''));
+          return /^[0-9]{12}$/.test(v.replace(/\s/g, ''));
         },
-        message: 'Phone must be 10 digits'
+        message: 'Phone must be 12 digits'
       }
     },
     password: {

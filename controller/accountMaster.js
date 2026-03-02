@@ -23,7 +23,7 @@ exports.createAccountMaster = async (req, res) => {
       throw new Error("Company name is required");
     }
     if (!validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 10 digits");
+      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
     }
     
     // Optional field validations
@@ -184,7 +184,7 @@ exports.updateAccountMaster = async (req, res) => {
       throw new Error("Invalid email address");
     }
     if (mobile && !validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 10 digits");
+      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
     }
     if (website && !validateWebsite(website)) {
       throw new Error("Invalid website URL");
@@ -358,7 +358,7 @@ exports.createPublicAccountMaster = async (req, res) => {
     }
 
     if (!validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 10 digits");
+      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
     }
 
     if (email && !validateEmail(email)) {

@@ -17,7 +17,7 @@ exports.createStaff = async (req, res) => {
       throw new Error("Invalid email address");
     }
     if (!validatePhone(phone)) {
-      throw new Error("Phone number must be exactly 10 digits");
+      throw new Error("Phone number must be exactly 12 digits (91 + 10 digits)");
     }
     if (!validatePassword(password)) {
       throw new Error("Password must be at least 6 characters");
@@ -248,7 +248,7 @@ exports.staffUpdate = async (req, res) => {
       throw new Error("Invalid email address");
     }
     if (phone && !validatePhone(phone)) {
-      throw new Error("Phone number must be exactly 10 digits");
+      throw new Error("Phone number must be exactly 12 digits (91 + 10 digits)");
     }
     if (password && !validatePassword(password)) {
       throw new Error("Password must be at least 6 characters");

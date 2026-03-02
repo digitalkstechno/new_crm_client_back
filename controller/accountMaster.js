@@ -298,74 +298,51 @@ exports.importAccountMaster = async (req, res) => {
 
     const { accounts, errors: parseErrors } = await parseImportExcel(req.file.buffer);
 
-    const successRecords = [];
-    const errorRecords = [];
-
-    for (let i = 0; i < accounts.length; i++) {
-      const accountData = accounts[i];
-      
-      // Check if mobile already exists
-      const existingAccount = await ACCOUNTMASTER.findOne({
-        mobile: accountData.mobile,
-        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
-      });
-
-      if (existingAccount) {
-        errorRecords.push({
-          companyName: accountData.companyName,
-          clientName: accountData.clientName,
-          mobile: accountData.mobile,
-          email: accountData.email,
-          error: "Mobile number already exists"
-        });
-        continue;
-      }
-
-      try {
-        await ACCOUNTMASTER.create(accountData);
-        successRecords.push(accountData);
-      } catch (err) {
-        errorRecords.push({
-          companyName: accountData.companyName,
-          clientName: accountData.clientName,
-          mobile: accountData.mobile,
-          email: accountData.email,
-          error: err.message
-        });
-      }
+    if (parseErrors.length > 0) {
+      return res.status(400).json({ status: "Fail", message: "Validation errors", errors: parseErrors });
     }
 
-    // Generate error Excel if there are errors
-    if (errorRecords.length > 0) {
-      const ExcelJS = require('exceljs');
-      const errorWorkbook = new ExcelJS.Workbook();
-      const errorSheet = errorWorkbook.addWorksheet('Errors');
-      
-      errorSheet.columns = [
-        { header: 'Company Name', key: 'companyName', width: 25 },
-        { header: 'Client Name', key: 'clientName', width: 20 },
-        { header: 'Mobile', key: 'mobile', width: 15 },
-        { header: 'Email', key: 'email', width: 25 },
-        { header: 'Error', key: 'error', width: 40 }
-      ];
+    const results = { success: 0, failed: 0, errors: [], failedRecords: [] };
 
-      errorRecords.forEach(record => {
-        errorSheet.addRow(record);
-      });
+    for (let i = 0; i < accounts.length; i++) {
+      try {
+        const accountData = accounts[i];
+        
+        let assignBy = null;
+        if (accountData.assignBy) {
+          assignBy = accountData.assignBy;
+        }
 
-      errorSheet.getRow(1).font = { bold: true };
-      errorSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+        await ACCOUNTMASTER.create({
+          companyName: accountData.companyName,
+          clientName: accountData.clientName,
+          address: accountData.address,
+          mobile: accountData.mobile,
+          email: accountData.email,
+          website: accountData.website,
+          sourcebyTypeOfClient: accountData.sourcebyTypeOfClient,
+          sourceFrom: accountData.sourceFrom,
+          assignBy: assignBy,
+          remark: accountData.remark
+        });
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=Import_Errors.xlsx');
-      await errorWorkbook.xlsx.write(res);
-      return res.end();
+        results.success++;
+      } catch (err) {
+        results.failed++;
+        const errorMsg = err.message;
+        results.errors.push(`Row ${i + 2}: ${errorMsg}`);
+        results.failedRecords.push({
+          rowNumber: i + 2,
+          ...accounts[i],
+          issue: errorMsg
+        });
+      }
     }
 
     return res.status(200).json({
       status: "Success",
-      message: `${successRecords.length} records imported successfully`,
-      data: { successCount: successRecords.length, errorCount: errorRecords.length }
+      message: `Import completed. Success: ${results.success}, Failed: ${results.failed}`,
+      data: results
     });
   } catch (error) {
     return res.status(500).json({ status: "Fail", message: error.message });

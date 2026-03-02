@@ -93,7 +93,7 @@ exports.fetchAllAccountMaster = async (req, res) => {
           $or: [
             { companyName: { $regex: search, $options: "i" } },
             { clientName: { $regex: search, $options: "i" } },
-            { mobile: { $regex: search, $options: "i" } },
+            { mobile: { $regex: search } },
             { email: { $regex: search, $options: "i" } },
             { website: { $regex: search, $options: "i" } },
           ],

@@ -6,7 +6,7 @@ const SOURCEFROM = require('../model/sourceFrom');
 exports.generateSampleExcel = async () => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Account Master');
-  
+
   // Headers
   sheet.columns = [
     { header: 'Company Name*', key: 'companyName', width: 25 },
@@ -131,12 +131,12 @@ exports.generateSampleExcel = async () => {
   // Add Instructions Sheet
   const instructionSheet = workbook.addWorksheet('Instructions');
   instructionSheet.columns = [{ header: 'Instructions', key: 'instruction', width: 80 }];
-  
+
   const instructions = [
     '1. Fields marked with * are mandatory',
     '2. Use dropdowns for Source Type, Source From, and Assign By fields',
     '3. Source Type, Source From, and Staff names are available in separate sheets for reference',
-    '4. Mobile should be 10 digits',
+    '4. Mobile should be 12 digits (91 + 10 digits)',
     '5. Email should be valid format',
     '6. Do not modify header row',
     '7. Delete sample data rows before importing your data'
@@ -151,7 +151,7 @@ exports.generateSampleExcel = async () => {
 exports.generateExportExcel = async (accounts) => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Account Master');
-  
+
   sheet.columns = [
     { header: 'Company Name', key: 'companyName', width: 25 },
     { header: 'Client Name', key: 'clientName', width: 20 },
@@ -201,7 +201,7 @@ exports.generateExportExcel = async (accounts) => {
 exports.parseImportExcel = async (buffer) => {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
-  
+
   const sheet = workbook.getWorksheet('Account Master');
   const accounts = [];
   const errors = [];
@@ -236,11 +236,11 @@ exports.parseImportExcel = async (buffer) => {
       if (typeof cellValue === 'object') {
         // Handle nested text.richText structure
         if (cellValue.text && typeof cellValue.text === 'object' && cellValue.text.richText) {
-          return cellValue.text.richText.map(function(rt) { return rt.text; }).join('');
+          return cellValue.text.richText.map(function (rt) { return rt.text; }).join('');
         }
         if (cellValue.text && typeof cellValue.text === 'string') return cellValue.text;
         if (cellValue.richText) {
-          return cellValue.richText.map(function(rt) { return rt.text; }).join('');
+          return cellValue.richText.map(function (rt) { return rt.text; }).join('');
         }
         if (cellValue.hyperlink) return cellValue.hyperlink;
       }
@@ -261,6 +261,7 @@ exports.parseImportExcel = async (buffer) => {
     website = website ? String(website).trim() : '';
 
     const rowData = {
+      rowNumber: rowNumber,
       companyName: companyName || '',
       clientName: clientName || '',
       address: {

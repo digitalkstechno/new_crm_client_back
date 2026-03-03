@@ -25,7 +25,7 @@ exports.createAccountMaster = async (req, res) => {
     if (!validatePhone(mobile)) {
       throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
     }
-    
+
     // Optional field validations
     if (email && !validateEmail(email)) {
       throw new Error("Invalid email address");
@@ -261,13 +261,13 @@ exports.downloadSampleExcel = async (req, res) => {
 exports.exportAccountMaster = async (req, res) => {
   try {
     const noLeadsOnly = req.query.noLeadsOnly === "true";
-    
+
     const accounts = await ACCOUNTMASTER.find({ isDeleted: false })
       .populate('assignBy')
       .populate('sourcebyTypeOfClient')
       .populate('sourceFrom')
       .sort({ createdAt: -1 });
-    
+
     let filteredAccounts = accounts;
     if (noLeadsOnly) {
       const LEAD = require("../model/lead");
@@ -281,7 +281,7 @@ exports.exportAccountMaster = async (req, res) => {
         .filter(item => item.leadCount === 0)
         .map(item => item.account);
     }
-    
+
     const workbook = await generateExportExcel(filteredAccounts);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Export.xlsx');
@@ -298,16 +298,30 @@ exports.importAccountMaster = async (req, res) => {
 
     const { accounts, errors: parseErrors } = await parseImportExcel(req.file.buffer);
 
-    if (parseErrors.length > 0) {
-      return res.status(400).json({ status: "Fail", message: "Validation errors", errors: parseErrors });
-    }
-
-    const results = { success: 0, failed: 0, errors: [], failedRecords: [] };
+    const results = {
+      success: 0,
+      failed: parseErrors.length,
+      errors: [...parseErrors],
+      failedRecords: parseErrors.map(err => ({ issue: err }))
+    };
 
     for (let i = 0; i < accounts.length; i++) {
       try {
         const accountData = accounts[i];
-        
+
+        // Mobile validation
+        if (!validatePhone(accountData.mobile)) {
+          throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
+        }
+
+        // Check for duplicate mobile
+        const verify = await ACCOUNTMASTER.findOne({
+          mobile: accountData.mobile,
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+        });
+
+        if (verify) throw new Error("Account already exists with this mobile number");
+
         let assignBy = null;
         if (accountData.assignBy) {
           assignBy = accountData.assignBy;
@@ -330,9 +344,9 @@ exports.importAccountMaster = async (req, res) => {
       } catch (err) {
         results.failed++;
         const errorMsg = err.message;
-        results.errors.push(`Row ${i + 2}: ${errorMsg}`);
+        const rowNum = accounts[i].rowNumber || (i + 2);
+        results.errors.push(`Row ${rowNum}: ${errorMsg}`);
         results.failedRecords.push({
-          rowNumber: i + 2,
           ...accounts[i],
           issue: errorMsg
         });

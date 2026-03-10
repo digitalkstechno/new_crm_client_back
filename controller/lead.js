@@ -25,9 +25,9 @@ exports.createLead = async (req, res) => {
     if (!validateRequiredField(leadDate)) {
       throw new Error("Lead date is required");
     }
-    if (!validateRequiredField(clientType)) {
+    /* if (!validateRequiredField(clientType)) {
       throw new Error("Client type is required");
-    }
+    } */
     if (!validateRequiredField(accountMaster)) {
       throw new Error("Account master is required");
     }
@@ -46,39 +46,51 @@ exports.createLead = async (req, res) => {
     if (budget && budget.from && budget.to && parseFloat(budget.from) > parseFloat(budget.to)) {
       throw new Error("Budget from cannot be greater than budget to");
     }
-    
+
     // Validate items
     items.forEach((item, index) => {
       if (!validateRequiredField(item.inquiryCategory)) {
         throw new Error(`Item ${index + 1}: Inquiry category is required`);
       }
-      if (!validateRequiredField(item.modelSuggestion)) {
+      /* if (!validateRequiredField(item.modelSuggestion)) {
         throw new Error(`Item ${index + 1}: Model suggestion is required`);
-      }
-      if (!validatePositiveNumber(item.qty) || parseFloat(item.qty) <= 0) {
+      } */
+      if (item.qty && (!validatePositiveNumber(item.qty) || parseFloat(item.qty) < 0)) {
         throw new Error(`Item ${index + 1}: Quantity must be a positive number`);
       }
-      if (!validatePositiveNumber(item.rate) || parseFloat(item.rate) <= 0) {
+      /* if (item.rate && (!validatePositiveNumber(item.rate) || parseFloat(item.rate) < 0)) {
         throw new Error(`Item ${index + 1}: Rate must be a positive number`);
-      }
+      } */
       if (!validatePositiveNumber(item.gst) || parseFloat(item.gst) < 0 || parseFloat(item.gst) > 100) {
         throw new Error(`Item ${index + 1}: GST must be between 0 and 100`);
       }
     });
 
-    const lead = await LEAD.create({
+    const leadData = {
       leadDate,
-      clientType,
-      deliveryDate,
-      shippingCharges,
-      budget,
+      clientType: clientType || undefined,
+      deliveryDate: deliveryDate || undefined,
+      shippingCharges: shippingCharges || undefined,
+      budget: {
+        from: budget?.from || undefined,
+        to: budget?.to || undefined,
+      },
       accountMaster,
       leadStatus,
-      items,
+      items: items.map(item => ({
+        ...item,
+        modelSuggestion: item.modelSuggestion || undefined,
+        qty: item.qty || "0",
+        rate: item.rate || "0",
+        gst: item.gst || "0",
+        total: item.total || "0"
+      })),
       remarks,
       paymentHistory,
       totalAmount,
-    });
+    };
+
+    const lead = await LEAD.create(leadData);
 
     return res.status(201).json({
       status: "Success",
@@ -100,7 +112,7 @@ exports.createLead = async (req, res) => {
 exports.fetchAllLeads = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
 
@@ -118,9 +130,9 @@ exports.fetchAllLeads = async (req, res) => {
           { clientName: { $regex: search, $options: "i" } }
         ]
       }).select('_id');
-      
+
       const accountMasterIds = accountMasters.map(am => am._id);
-      
+
       query.$and.push({
         $or: [
           { leadStatus: { $regex: search, $options: "i" } },
@@ -133,8 +145,8 @@ exports.fetchAllLeads = async (req, res) => {
     const totalRecords = await LEAD.countDocuments(query);
 
     const leads = await LEAD.find(query)
-      .populate({ 
-        path: "accountMaster", 
+      .populate({
+        path: "accountMaster",
         populate: [
           { path: "assignBy" },
           { path: "sourcebyTypeOfClient" },
@@ -176,8 +188,8 @@ exports.fetchLeadById = async (req, res) => {
     const id = req.params.id;
 
     const lead = await LEAD.findById(id)
-      .populate({ 
-        path: "accountMaster", 
+      .populate({
+        path: "accountMaster",
         populate: [
           { path: "assignBy" },
           { path: "sourcebyTypeOfClient" },
@@ -216,11 +228,11 @@ exports.updateLead = async (req, res) => {
 
     const { LEAD_STATUSES } = require("../constants/leadStatus");
     const newStatus = req.body.leadStatus;
-    
+
     if (newStatus) {
       const currentIndex = LEAD_STATUSES.indexOf(oldLead.leadStatus);
       const newIndex = LEAD_STATUSES.indexOf(newStatus);
-      
+
       // Allow only 1 step backward, except for Lost
       if (newIndex < currentIndex - 1 && newStatus !== "Lost") {
         return res.status(400).json({
@@ -228,7 +240,7 @@ exports.updateLead = async (req, res) => {
           message: "Can only move 1 step backward",
         });
       }
-      
+
       // Update maxStatusReached if moving forward
       const maxIndex = LEAD_STATUSES.indexOf(oldLead.maxStatusReached || "New Lead");
       if (newIndex > maxIndex) {
@@ -236,9 +248,19 @@ exports.updateLead = async (req, res) => {
       }
     }
 
+    const updateData = { ...req.body };
+    if (updateData.clientType === "") updateData.clientType = undefined;
+    if (updateData.deliveryDate === "") updateData.deliveryDate = undefined;
+    if (updateData.items) {
+      updateData.items = updateData.items.map(item => ({
+        ...item,
+        modelSuggestion: item.modelSuggestion || undefined
+      }));
+    }
+
     const updatedLead = await LEAD.findByIdAndUpdate(
       id,
-      req.body,
+      updateData,
       { new: true }
     );
 
@@ -288,7 +310,7 @@ exports.fetchLeadsByStatus = async (req, res) => {
   try {
     const { status } = req.params;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
     if (!req.permissions.includes(status)) {
@@ -298,16 +320,16 @@ exports.fetchLeadsByStatus = async (req, res) => {
       });
     }
 
-    const query = { 
-      leadStatus: status, 
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
+    const query = {
+      leadStatus: status,
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
     };
 
     const totalRecords = await LEAD.countDocuments(query);
 
     const leads = await LEAD.find(query)
-      .populate({ 
-        path: "accountMaster", 
+      .populate({
+        path: "accountMaster",
         populate: [
           { path: "assignBy" },
           { path: "sourcebyTypeOfClient" },
@@ -451,7 +473,7 @@ exports.getDashboardStats = async (req, res) => {
     const { LEAD_STATUSES } = require("../constants/leadStatus");
     const { startDate, endDate, topLimit } = req.query;
     const limit = parseInt(topLimit) || 5;
-    
+
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -461,7 +483,7 @@ exports.getDashboardStats = async (req, res) => {
         }
       };
     }
-    
+
     const statusCounts = {};
     for (const status of req.permissions) {
       const count = await LEAD.countDocuments({
@@ -485,15 +507,15 @@ exports.getDashboardStats = async (req, res) => {
         $lt: tomorrow
       }
     })
-    .populate({ 
-      path: "accountMaster", 
-      populate: [
-        { path: "assignBy" },
-        { path: "sourcebyTypeOfClient" }
-      ]
-    })
-    .select("accountMaster leadStatus followUps")
-    .sort({ "followUps.date": 1 });
+      .populate({
+        path: "accountMaster",
+        populate: [
+          { path: "assignBy" },
+          { path: "sourcebyTypeOfClient" }
+        ]
+      })
+      .select("accountMaster leadStatus followUps")
+      .sort({ "followUps.date": 1 });
 
     const followUpsWithDetails = todayFollowUps.map(lead => {
       const todayFollowUp = lead.followUps.find(f => {
@@ -515,19 +537,19 @@ exports.getDashboardStats = async (req, res) => {
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       ...dateFilter
     })
-    .select("totalAmount paymentHistory accountMaster leadStatus items")
-    .populate("accountMaster")
-    .populate({
-      path: "items.modelSuggestion",
-      populate: { path: "color" }
-    })
-    .populate("items.inquiryCategory")
-    .populate("items.customizationType");
+      .select("totalAmount paymentHistory accountMaster leadStatus items")
+      .populate("accountMaster")
+      .populate({
+        path: "items.modelSuggestion",
+        populate: { path: "color" }
+      })
+      .populate("items.inquiryCategory")
+      .populate("items.customizationType");
 
     // Separate leads for pending calculation (only Dispatch, Completed, Final Payment)
-    const pendingStatusLeads = allLeads.filter(lead => 
-      lead.leadStatus === "Dispatch" || 
-      lead.leadStatus === "Completed" || 
+    const pendingStatusLeads = allLeads.filter(lead =>
+      lead.leadStatus === "Dispatch" ||
+      lead.leadStatus === "Completed" ||
       lead.leadStatus === "Final Payment"
     );
 
@@ -594,13 +616,13 @@ exports.getDashboardStats = async (req, res) => {
       .slice(0, limit)
       .map(([key, count]) => {
         const [id, modelNo, name, color, inquiryCategory, category] = key.split('|');
-        return { 
-          modelNo: modelNo || null, 
-          name: name || null, 
-          color: color || null, 
+        return {
+          modelNo: modelNo || null,
+          name: name || null,
+          color: color || null,
           inquiryCategory: inquiryCategory || null,
           category: category || null,
-          count 
+          count
         };
       });
 
@@ -658,10 +680,10 @@ exports.getDashboardStats = async (req, res) => {
         $lte: next7Days
       }
     })
-    .populate("accountMaster")
-    .select("accountMaster deliveryDate leadStatus totalAmount")
-    .sort({ deliveryDate: 1 })
-    .limit(20);
+      .populate("accountMaster")
+      .select("accountMaster deliveryDate leadStatus totalAmount")
+      .sort({ deliveryDate: 1 })
+      .limit(20);
 
     const upcomingDeliveriesData = upcomingDeliveries.map(lead => ({
       leadId: lead._id,
@@ -709,7 +731,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getGraphData = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -727,9 +749,9 @@ exports.getGraphData = async (req, res) => {
     }).select("totalAmount paymentHistory leadStatus accountMaster createdAt");
 
     // Separate leads for pending calculation (only Dispatch, Completed, Final Payment)
-    const pendingStatusLeads = allLeads.filter(lead => 
-      lead.leadStatus === "Dispatch" || 
-      lead.leadStatus === "Completed" || 
+    const pendingStatusLeads = allLeads.filter(lead =>
+      lead.leadStatus === "Dispatch" ||
+      lead.leadStatus === "Completed" ||
       lead.leadStatus === "Final Payment"
     );
 

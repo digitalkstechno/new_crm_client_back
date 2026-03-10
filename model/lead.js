@@ -14,13 +14,12 @@ let itemSchema = new Schema(
     modelSuggestion: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ModelSuggestion",
-      required: true,
     },
-    qty: {type: String},
-    rate: {type: String},
-    gst: {type: String},
-    total: {type: String},
-    isDone: {type: Boolean, default: false},
+    qty: { type: String },
+    rate: { type: String },
+    gst: { type: String },
+    total: { type: String },
+    isDone: { type: Boolean, default: false },
     customizationType: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "CustomizationType",
@@ -40,26 +39,26 @@ let itemSchema = new Schema(
 
 let remarkSchema = new Schema(
   {
-    date: {type: Date, default: Date.now},
-    remark : {type: String}
+    date: { type: Date, default: Date.now },
+    remark: { type: String }
   }
 )
 
 let paymentSchema = new Schema({
-    date : {type: Date, default: Date.now},
-    amount : {type: String},
-    modeOfPayment : {
-      type: String,
-      enum: ["Cash", "Cheque", "NEFT", "RTGS","DD"]
-    },
-    remark : {type: String}
-  })
+  date: { type: Date, default: Date.now },
+  amount: { type: String },
+  modeOfPayment: {
+    type: String,
+    enum: ["Cash", "Cheque", "NEFT", "RTGS", "DD"]
+  },
+  remark: { type: String }
+})
 
 let followUpSchema = new Schema({
-    date: {type: Date, required: true},
-    description: {type: String, required: true},
-    createdAt: {type: Date, default: Date.now}
-  })
+  date: { type: Date, required: true },
+  description: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+})
 
 /* -------------------- LEAD SCHEMA -------------------- */
 
@@ -103,8 +102,8 @@ let leadSchema = new Schema(
     remarks: [remarkSchema],
     paymentHistory: [paymentSchema],
     followUps: [followUpSchema],
-    totalAmount : {type: String},
-    confirmationRemark: {type: String},
+    totalAmount: { type: String },
+    confirmationRemark: { type: String },
     maxStatusReached: {
       type: String,
       enum: LEAD_STATUSES,

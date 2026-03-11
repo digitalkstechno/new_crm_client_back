@@ -109,6 +109,12 @@ let leadSchema = new Schema(
       enum: LEAD_STATUSES,
       default: "New Lead",
     },
+    lostDescription: {
+      type: String,
+    },
+    dispatchDescription: {
+      type: String,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

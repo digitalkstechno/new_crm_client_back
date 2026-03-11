@@ -238,14 +238,6 @@ exports.updateLead = async (req, res) => {
         });
       }
 
-      // Validate dispatchDescription when moving to Dispatch status
-      if (newStatus === "Dispatch" && !req.body.dispatchDescription) {
-        return res.status(400).json({
-          status: "Fail",
-          message: "Dispatch description is required when moving to Dispatch",
-        });
-      }
-
       const currentIndex = LEAD_STATUSES.indexOf(oldLead.leadStatus);
       const newIndex = LEAD_STATUSES.indexOf(newStatus);
 

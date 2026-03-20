@@ -71,7 +71,7 @@ let leadSchema = new Schema(
 
     clientType: {
       type: String,
-      enum: ["New", "Existing"],
+      enum: ["New", "Client"],
     },
 
     deliveryDate: {

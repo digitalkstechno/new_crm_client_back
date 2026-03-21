@@ -13,8 +13,11 @@ let accountMasterSchema = new Schema(
     address: {
       line1: String,
       line2: String,
+      cityId: String,
       cityName: String,
+      stateId: String,
       stateName: String,
+      countryId: String,
       countryName: String,
     },
     mobile: {

@@ -238,14 +238,6 @@ exports.updateLead = async (req, res) => {
         });
       }
 
-      // Validate dispatchDescription when moving to Dispatch status
-      if (newStatus === "Dispatch" && !req.body.dispatchDescription) {
-        return res.status(400).json({
-          status: "Fail",
-          message: "Dispatch description is required when moving to Dispatch",
-        });
-      }
-
       const currentIndex = LEAD_STATUSES.indexOf(oldLead.leadStatus);
       const newIndex = LEAD_STATUSES.indexOf(newStatus);
 
@@ -387,8 +379,8 @@ exports.addFollowUp = async (req, res) => {
     const { id } = req.params;
     const { date, description } = req.body;
 
-    if (!date) {
-      throw new Error("Date is required");
+    if (!date || !description) {
+      throw new Error("Date and description are required");
     }
 
     const lead = await LEAD.findById(id);

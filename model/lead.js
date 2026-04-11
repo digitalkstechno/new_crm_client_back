@@ -71,7 +71,7 @@ let leadSchema = new Schema(
 
     clientType: {
       type: String,
-      enum: ["New", "Existing"],
+      enum: ["New", "Client"],
     },
 
     deliveryDate: {
@@ -108,6 +108,12 @@ let leadSchema = new Schema(
       type: String,
       enum: LEAD_STATUSES,
       default: "New Lead",
+    },
+    lostDescription: {
+      type: String,
+    },
+    dispatchDescription: {
+      type: String,
     },
     isDeleted: {
       type: Boolean,

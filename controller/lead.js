@@ -371,8 +371,8 @@ exports.addFollowUp = async (req, res) => {
     const { id } = req.params;
     const { date, description } = req.body;
 
-    if (!date || !description) {
-      throw new Error("Date and description are required");
+    if (!date) {
+      throw new Error("Date is required");
     }
 
     const lead = await LEAD.findById(id);

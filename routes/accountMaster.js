@@ -12,10 +12,14 @@ const {
   downloadSampleExcel,
   exportAccountMaster,
   importAccountMaster,
-  createPublicAccountMaster
+  createPublicAccountMaster,
+  createPublicLead,
+  fetchAllPublicLeads
 } = require("../controller/accountMaster");
 
 router.post("/public", createPublicAccountMaster);
+router.post("/public-lead", createPublicLead);
+router.get("/public-lead", fetchAllPublicLeads);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);
 router.post("/import", authMiddleware, upload.single('file'), importAccountMaster);

@@ -1,5 +1,6 @@
 const ACCOUNTMASTER = require("../model/accountMaster");
 const STAFF = require("../model/staff");
+const PUBLICLEAD = require("../model/publicLead");
 const ExcelJS = require('exceljs');
 const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
 const { validateEmail, validatePhone, validateWebsite, validateRequiredField } = require("../utils/validation");
@@ -441,6 +442,87 @@ exports.createPublicAccountMaster = async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+exports.createPublicLead = async (req, res) => {
+  try {
+    const { name, companyName, email, whatsappNumber } = req.body;
+
+    if (!name || !companyName || !email || !whatsappNumber) {
+      throw new Error("Name, Company Name, Email, and WhatsApp Number are required");
+    }
+
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+
+    if (whatsappNumber && !validatePhone(whatsappNumber)) {
+      throw new Error("WhatsApp number must be exactly 12 digits (91 + 10 digits)");
+    }
+
+    // Check for duplicate public lead (optional, but good practice)
+    const verify = await PUBLICLEAD.findOne({
+      $and: [
+        { $or: [{ email }, { whatsappNumber }] },
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+      ],
+    });
+
+    if (verify) throw new Error("Public lead already exists with this email or whatsapp number");
+
+    const lead = await PUBLICLEAD.create({
+      name,
+      companyName,
+      email,
+      whatsappNumber,
+    });
+
+    return res.status(201).json({
+      status: "Success",
+      message: "Lead submitted successfully",
+      data: lead,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+exports.fetchAllPublicLeads = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = {
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    };
+
+    const totalRecords = await PUBLICLEAD.countDocuments(query);
+    const leads = await PUBLICLEAD.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Public leads fetched successfully",
+      pagination: {
+        totalRecords,
+        currentPage: page,
+        totalPages: Math.ceil(totalRecords / limit),
+        limit,
+      },
+      data: leads,
+    });
+  } catch (error) {
+    return res.status(500).json({
       status: "Fail",
       message: error.message,
     });

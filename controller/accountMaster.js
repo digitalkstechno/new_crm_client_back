@@ -4,6 +4,7 @@ const PUBLICLEAD = require("../model/publicLead");
 const ExcelJS = require('exceljs');
 const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
 const { validateEmail, validatePhone, validateWebsite, validateRequiredField } = require("../utils/validation");
+const sendMailasync = require("../utils/mailing");
 
 exports.createAccountMaster = async (req, res) => {
   try {
@@ -480,6 +481,31 @@ exports.createPublicLead = async (req, res) => {
       email,
       whatsappNumber,
     });
+
+    // Send thank you email to customer
+    try {
+      const subject = "Thank you for your application";
+      const html = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Application Received</h1>
+          </div>
+          <div style="padding: 40px 30px; background-color: white;">
+            <p style="font-size: 18px; margin-top: 0;">Hi <strong>${name}</strong>,</p>
+            <p style="line-height: 1.8; font-size: 16px;">Thank you for your application. We have received your details for <strong>${companyName}</strong> and our team will contact you soon.</p>
+            <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <p style="margin: 0; font-style: italic; color: #64748b;">"We look forward to connecting with you and exploring how we can work together."</p>
+            </div>
+          </div>
+          <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 0; color: #94a3b8; font-size: 14px;">© ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+          </div>
+        </div>
+      `;
+      await sendMailasync(email, subject, html);
+    } catch (mailError) {
+      console.error("Error sending thank you email:", mailError);
+    }
 
     return res.status(201).json({
       status: "Success",

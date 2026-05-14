@@ -451,7 +451,7 @@ exports.createPublicAccountMaster = async (req, res) => {
 
 exports.createPublicLead = async (req, res) => {
   try {
-    const { name, companyName, email, whatsappNumber } = req.body;
+    const { name, companyName, email, whatsappNumber, notes } = req.body;
 
     if (!name || !companyName || !email || !whatsappNumber) {
       throw new Error("Name, Company Name, Email, and WhatsApp Number are required");
@@ -475,7 +475,7 @@ exports.createPublicLead = async (req, res) => {
 
     if (verify) throw new Error("Public lead already exists with this email or whatsapp number");
 
-    const body = { name, companyName, email, whatsappNumber };
+    const body = { name, companyName, email, whatsappNumber, notes };
     if (req.files?.length > 0) {
       body.attachments = req.files.map((file) => file.filename);
     }

@@ -20,6 +20,9 @@ const publicLeadSchema = new Schema(
       required: true,
     },
     attachments: [{ type: String }],
+    notes: {
+      type: String,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

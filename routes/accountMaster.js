@@ -1,7 +1,9 @@
 var express = require("express");
 var router = express.Router();
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+const createUploader = require("../helper/fileHelper");
+const upload = createUploader("uploads/publicLeads");
+// const upload = multer({ storage: multer.memoryStorage() });
 const authMiddleware = require("../middleware/auth");
 const {
   createAccountMaster,

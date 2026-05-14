@@ -19,6 +19,12 @@ const publicLeadSchema = new Schema(
       type: String,
       required: true,
     },
+    document: {
+      fileName: { type: String },       // original file name
+      filePath: { type: String },       // path where file is stored
+      fileType: { type: String },       // mimetype e.g. image/png
+      fileSize: { type: Number },       // size in bytes
+    },
     isDeleted: {
       type: Boolean,
       default: false,

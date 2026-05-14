@@ -360,7 +360,7 @@ exports.importAccountMaster = async (req, res) => {
     if (results.failedRecords.length > 0) {
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet('Failed Records');
-      
+
       sheet.columns = [
         { header: 'Row Number', key: 'rowNumber', width: 12 },
         { header: 'Company Name', key: 'companyName', width: 25 },
@@ -369,7 +369,7 @@ exports.importAccountMaster = async (req, res) => {
         { header: 'Email', key: 'email', width: 25 },
         { header: 'Error', key: 'issue', width: 50 }
       ];
-      
+
       results.failedRecords.forEach(record => {
         sheet.addRow({
           rowNumber: record.rowNumber,
@@ -380,10 +380,10 @@ exports.importAccountMaster = async (req, res) => {
           issue: record.issue
         });
       });
-      
+
       sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
-      
+
       const buffer = await workbook.xlsx.writeBuffer();
       results.errorFile = buffer.toString('base64');
     }
@@ -480,6 +480,16 @@ exports.createPublicLead = async (req, res) => {
       companyName,
       email,
       whatsappNumber,
+      //upload document 
+      ...(req.file && {
+        document: {
+          fileName: req.file.originalname,
+          // filePath: `${process.env.BASE_URL}/uploads/publicLeads/${req.file.filename}`,
+          filePath: `/uploads/publicLeads/${req.file.filename}`,
+          fileType: req.file.mimetype,
+          fileSize: req.file.size,
+        }
+      })
     });
 
     // Send thank you email to customer

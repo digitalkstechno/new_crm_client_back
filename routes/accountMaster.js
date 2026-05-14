@@ -20,7 +20,7 @@ const {
 } = require("../controller/accountMaster");
 
 router.post("/public", createPublicAccountMaster);
-router.post("/public-lead", createPublicLead);
+router.post("/public-lead", upload.array("attachments"), createPublicLead);
 router.get("/public-lead", fetchAllPublicLeads);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);

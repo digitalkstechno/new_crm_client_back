@@ -1,6 +1,10 @@
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 dotenv.config();
+//
+// const dns = require('node:dns')
+// dns.setServers(['1.1.1.1','8.8.8.8'])
+//
 connectDB();
 var createError = require("http-errors");
 var express = require("express");

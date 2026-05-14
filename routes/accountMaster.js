@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 const multer = require('multer');
-const createUploader = require("../helper/fileHelper");
+const createUploader = require("../utils/multer");
 const upload = createUploader("uploads/publicLeads");
 // const upload = multer({ storage: multer.memoryStorage() });
 const authMiddleware = require("../middleware/auth");
@@ -24,7 +24,7 @@ router.post("/public-lead", createPublicLead);
 router.get("/public-lead", fetchAllPublicLeads);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);
-router.post("/import", authMiddleware, upload.single('file'), importAccountMaster);
+router.post("/import", authMiddleware, upload.array("attachments"), importAccountMaster);
 router.post("/", authMiddleware, createAccountMaster);
 router.get("/", authMiddleware, fetchAllAccountMaster);
 router.get("/:id", authMiddleware, fetchAccountMasterById);

@@ -475,22 +475,12 @@ exports.createPublicLead = async (req, res) => {
 
     if (verify) throw new Error("Public lead already exists with this email or whatsapp number");
 
-    const lead = await PUBLICLEAD.create({
-      name,
-      companyName,
-      email,
-      whatsappNumber,
-      //upload document 
-      ...(req.file && {
-        document: {
-          fileName: req.file.originalname,
-          // filePath: `${process.env.BASE_URL}/uploads/publicLeads/${req.file.filename}`,
-          filePath: `/uploads/publicLeads/${req.file.filename}`,
-          fileType: req.file.mimetype,
-          fileSize: req.file.size,
-        }
-      })
-    });
+    const body = { name, companyName, email, whatsappNumber };
+    if (req.files?.length > 0) {
+      body.attachments = req.files.map((file) => file.filename);
+    }
+
+    const lead = await PUBLICLEAD.create(body);
 
     // Send thank you email to customer
     try {

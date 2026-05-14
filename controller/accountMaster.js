@@ -1,9 +1,18 @@
 const ACCOUNTMASTER = require("../model/accountMaster");
 const STAFF = require("../model/staff");
 const PUBLICLEAD = require("../model/publicLead");
-const ExcelJS = require('exceljs');
-const { generateSampleExcel, generateExportExcel, parseImportExcel } = require("../utils/excelHelper");
-const { validateEmail, validatePhone, validateWebsite, validateRequiredField } = require("../utils/validation");
+const ExcelJS = require("exceljs");
+const {
+  generateSampleExcel,
+  generateExportExcel,
+  parseImportExcel,
+} = require("../utils/excelHelper");
+const {
+  validateEmail,
+  validatePhone,
+  validateWebsite,
+  validateRequiredField,
+} = require("../utils/validation");
 const sendMailasync = require("../utils/mailing");
 
 exports.createAccountMaster = async (req, res) => {
@@ -26,7 +35,9 @@ exports.createAccountMaster = async (req, res) => {
       throw new Error("Company name is required");
     }
     if (!validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
+      throw new Error(
+        "Mobile number must be exactly 12 digits (91 + 10 digits)",
+      );
     }
 
     // Optional field validations
@@ -40,10 +51,11 @@ exports.createAccountMaster = async (req, res) => {
     // Check for duplicate mobile
     const verify = await ACCOUNTMASTER.findOne({
       mobile,
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
     });
 
-    if (verify) throw new Error("Account already exists with this mobile number");
+    if (verify)
+      throw new Error("Account already exists with this mobile number");
 
     // Prepare data - convert empty strings to null for ObjectId fields
     const accountData = {
@@ -104,7 +116,7 @@ exports.fetchAllAccountMaster = async (req, res) => {
     };
 
     // Filter by assignBy if view_own
-    if (req.accountMasterViewType === 'view_own') {
+    if (req.accountMasterViewType === "view_own") {
       query.$and.push({ assignBy: req.user._id });
     }
 
@@ -121,17 +133,21 @@ exports.fetchAllAccountMaster = async (req, res) => {
     const LEAD = require("../model/lead");
     const accountsWithLeadCount = await Promise.all(
       accounts.map(async (account) => {
-        const leadCount = await LEAD.countDocuments({ accountMaster: account._id });
+        const leadCount = await LEAD.countDocuments({
+          accountMaster: account._id,
+        });
         return {
           ...account.toObject(),
           leadCount,
         };
-      })
+      }),
     );
 
     let filteredAccounts = accountsWithLeadCount;
     if (noLeadsOnly) {
-      filteredAccounts = accountsWithLeadCount.filter(acc => acc.leadCount === 0);
+      filteredAccounts = accountsWithLeadCount.filter(
+        (acc) => acc.leadCount === 0,
+      );
     }
 
     return res.status(200).json({
@@ -187,7 +203,9 @@ exports.updateAccountMaster = async (req, res) => {
       throw new Error("Invalid email address");
     }
     if (mobile && !validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
+      throw new Error(
+        "Mobile number must be exactly 12 digits (91 + 10 digits)",
+      );
     }
     if (website && !validateWebsite(website)) {
       throw new Error("Invalid website URL");
@@ -198,19 +216,25 @@ exports.updateAccountMaster = async (req, res) => {
 
     // Check for duplicate email/mobile if changed
     if (email && email !== oldAccount.email) {
-      const existingEmail = await ACCOUNTMASTER.findOne({ email, isDeleted: false, _id: { $ne: id } });
+      const existingEmail = await ACCOUNTMASTER.findOne({
+        email,
+        isDeleted: false,
+        _id: { $ne: id },
+      });
       if (existingEmail) throw new Error("Email already exists");
     }
     if (mobile && mobile !== oldAccount.mobile) {
-      const existingMobile = await ACCOUNTMASTER.findOne({ mobile, isDeleted: false, _id: { $ne: id } });
+      const existingMobile = await ACCOUNTMASTER.findOne({
+        mobile,
+        isDeleted: false,
+        _id: { $ne: id },
+      });
       if (existingMobile) throw new Error("Mobile number already exists");
     }
 
-    const updatedAccount = await ACCOUNTMASTER.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true }
-    )
+    const updatedAccount = await ACCOUNTMASTER.findByIdAndUpdate(id, req.body, {
+      new: true,
+    })
       .populate("assignBy")
       .populate("sourcebyTypeOfClient")
       .populate("sourceFrom");
@@ -252,8 +276,14 @@ exports.deleteAccountMaster = async (req, res) => {
 exports.downloadSampleExcel = async (req, res) => {
   try {
     const workbook = await generateSampleExcel();
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Sample.xlsx');
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=AccountMaster_Sample.xlsx",
+    );
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -266,9 +296,9 @@ exports.exportAccountMaster = async (req, res) => {
     const noLeadsOnly = req.query.noLeadsOnly === "true";
 
     const accounts = await ACCOUNTMASTER.find({ isDeleted: false })
-      .populate('assignBy')
-      .populate('sourcebyTypeOfClient')
-      .populate('sourceFrom')
+      .populate("assignBy")
+      .populate("sourcebyTypeOfClient")
+      .populate("sourceFrom")
       .sort({ createdAt: -1 });
 
     let filteredAccounts = accounts;
@@ -276,18 +306,26 @@ exports.exportAccountMaster = async (req, res) => {
       const LEAD = require("../model/lead");
       const accountsWithLeadCount = await Promise.all(
         accounts.map(async (account) => {
-          const leadCount = await LEAD.countDocuments({ accountMaster: account._id });
+          const leadCount = await LEAD.countDocuments({
+            accountMaster: account._id,
+          });
           return { account, leadCount };
-        })
+        }),
       );
       filteredAccounts = accountsWithLeadCount
-        .filter(item => item.leadCount === 0)
-        .map(item => item.account);
+        .filter((item) => item.leadCount === 0)
+        .map((item) => item.account);
     }
 
     const workbook = await generateExportExcel(filteredAccounts);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=AccountMaster_Export.xlsx');
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=AccountMaster_Export.xlsx",
+    );
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -299,13 +337,15 @@ exports.importAccountMaster = async (req, res) => {
   try {
     if (!req.file) throw new Error("No file uploaded");
 
-    const { accounts, errors: parseErrors } = await parseImportExcel(req.file.buffer);
+    const { accounts, errors: parseErrors } = await parseImportExcel(
+      req.file.buffer,
+    );
 
     const results = {
       success: 0,
       failed: parseErrors.length,
       errors: [...parseErrors],
-      failedRecords: parseErrors.map(err => ({ issue: err }))
+      failedRecords: parseErrors.map((err) => ({ issue: err })),
     };
 
     for (let i = 0; i < accounts.length; i++) {
@@ -314,16 +354,19 @@ exports.importAccountMaster = async (req, res) => {
 
         // Mobile validation
         if (!validatePhone(accountData.mobile)) {
-          throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
+          throw new Error(
+            "Mobile number must be exactly 12 digits (91 + 10 digits)",
+          );
         }
 
         // Check for duplicate mobile
         const verify = await ACCOUNTMASTER.findOne({
           mobile: accountData.mobile,
-          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+          $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
         });
 
-        if (verify) throw new Error("Account already exists with this mobile number");
+        if (verify)
+          throw new Error("Account already exists with this mobile number");
 
         let assignBy = null;
         if (accountData.assignBy) {
@@ -340,18 +383,18 @@ exports.importAccountMaster = async (req, res) => {
           sourcebyTypeOfClient: accountData.sourcebyTypeOfClient,
           sourceFrom: accountData.sourceFrom,
           assignBy: assignBy,
-          remark: accountData.remark
+          remark: accountData.remark,
         });
 
         results.success++;
       } catch (err) {
         results.failed++;
         const errorMsg = err.message;
-        const rowNum = accounts[i].rowNumber || (i + 2);
+        const rowNum = accounts[i].rowNumber || i + 2;
         results.errors.push(`Row ${rowNum}: ${errorMsg}`);
         results.failedRecords.push({
           ...accounts[i],
-          issue: errorMsg
+          issue: errorMsg,
         });
       }
     }
@@ -359,39 +402,43 @@ exports.importAccountMaster = async (req, res) => {
     // Generate error Excel if there are failed records
     if (results.failedRecords.length > 0) {
       const workbook = new ExcelJS.Workbook();
-      const sheet = workbook.addWorksheet('Failed Records');
+      const sheet = workbook.addWorksheet("Failed Records");
 
       sheet.columns = [
-        { header: 'Row Number', key: 'rowNumber', width: 12 },
-        { header: 'Company Name', key: 'companyName', width: 25 },
-        { header: 'Client Name', key: 'clientName', width: 20 },
-        { header: 'Mobile', key: 'mobile', width: 15 },
-        { header: 'Email', key: 'email', width: 25 },
-        { header: 'Error', key: 'issue', width: 50 }
+        { header: "Row Number", key: "rowNumber", width: 12 },
+        { header: "Company Name", key: "companyName", width: 25 },
+        { header: "Client Name", key: "clientName", width: 20 },
+        { header: "Mobile", key: "mobile", width: 15 },
+        { header: "Email", key: "email", width: 25 },
+        { header: "Error", key: "issue", width: 50 },
       ];
 
-      results.failedRecords.forEach(record => {
+      results.failedRecords.forEach((record) => {
         sheet.addRow({
           rowNumber: record.rowNumber,
           companyName: record.companyName,
           clientName: record.clientName,
           mobile: record.mobile,
           email: record.email,
-          issue: record.issue
+          issue: record.issue,
         });
       });
 
-      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+      sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      sheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFF0000" },
+      };
 
       const buffer = await workbook.xlsx.writeBuffer();
-      results.errorFile = buffer.toString('base64');
+      results.errorFile = buffer.toString("base64");
     }
 
     return res.status(200).json({
       status: "Success",
       message: `Import completed. Success: ${results.success}, Failed: ${results.failed}`,
-      data: results
+      data: results,
     });
   } catch (error) {
     return res.status(500).json({ status: "Fail", message: error.message });
@@ -400,14 +447,17 @@ exports.importAccountMaster = async (req, res) => {
 
 exports.createPublicAccountMaster = async (req, res) => {
   try {
-    const { companyName, clientName, mobile, email, website, address } = req.body;
+    const { companyName, clientName, mobile, email, website, address } =
+      req.body;
 
     if (!companyName || !clientName || !mobile) {
       throw new Error("Company Name, Client Name, and Mobile are required");
     }
 
     if (!validatePhone(mobile)) {
-      throw new Error("Mobile number must be exactly 12 digits (91 + 10 digits)");
+      throw new Error(
+        "Mobile number must be exactly 12 digits (91 + 10 digits)",
+      );
     }
 
     if (email && !validateEmail(email)) {
@@ -425,7 +475,8 @@ exports.createPublicAccountMaster = async (req, res) => {
       ],
     });
 
-    if (verify) throw new Error("Account already exists with this email or mobile");
+    if (verify)
+      throw new Error("Account already exists with this email or mobile");
 
     const account = await ACCOUNTMASTER.create({
       companyName,
@@ -454,7 +505,9 @@ exports.createPublicLead = async (req, res) => {
     const { name, companyName, email, whatsappNumber, notes } = req.body;
 
     if (!name || !companyName || !email || !whatsappNumber) {
-      throw new Error("Name, Company Name, Email, and WhatsApp Number are required");
+      throw new Error(
+        "Name, Company Name, Email, and WhatsApp Number are required",
+      );
     }
 
     if (email && !validateEmail(email)) {
@@ -462,7 +515,9 @@ exports.createPublicLead = async (req, res) => {
     }
 
     if (whatsappNumber && !validatePhone(whatsappNumber)) {
-      throw new Error("WhatsApp number must be exactly 12 digits (91 + 10 digits)");
+      throw new Error(
+        "WhatsApp number must be exactly 12 digits (91 + 10 digits)",
+      );
     }
 
     // Check for duplicate public lead (optional, but good practice)
@@ -473,7 +528,10 @@ exports.createPublicLead = async (req, res) => {
       ],
     });
 
-    if (verify) throw new Error("Public lead already exists with this email or whatsapp number");
+    if (verify)
+      throw new Error(
+        "Public lead already exists with this email or whatsapp number",
+      );
 
     const body = { name, companyName, email, whatsappNumber, notes };
     if (req.files?.length > 0) {
@@ -525,9 +583,23 @@ exports.fetchAllPublicLeads = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search || "";
 
     const query = {
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+
+        search
+          ? {
+              $or: [
+                { name: { $regex: search, $options: "i" } },
+                { companyName: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } },
+                { whatsappNumber: { $regex: search } },
+              ],
+            }
+          : {},
+      ],
     };
 
     const totalRecords = await PUBLICLEAD.countDocuments(query);

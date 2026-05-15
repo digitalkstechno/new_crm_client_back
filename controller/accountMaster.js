@@ -541,7 +541,8 @@ exports.createPublicLead = async (req, res) => {
         originWebsite: "https://www.mozudesign.com/",
         templateName: "expo_msg",
         language: "en",
-        myfile: profilePdfUrl
+        myfile: profilePdfUrl,
+        myfileName: "Mozu Catalogue 2026.pdf",
       }, {
         headers: {
           'Content-Type': 'application/json',

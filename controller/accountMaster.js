@@ -522,17 +522,6 @@ exports.createPublicLead = async (req, res) => {
     }
 
     // Check for duplicate public lead (optional, but good practice)
-    const verify = await PUBLICLEAD.findOne({
-      $and: [
-        { $or: [{ email }, { whatsappNumber }] },
-        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
-      ],
-    });
-
-    if (verify)
-      throw new Error(
-        "Public lead already exists with this email or whatsapp number",
-      );
 
     const body = { name, companyName, email, whatsappNumber, notes };
     if (req.files?.length > 0) {

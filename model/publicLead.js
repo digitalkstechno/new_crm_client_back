@@ -5,15 +5,12 @@ const publicLeadSchema = new Schema(
   {
     name: {
       type: String,
-      required: true,
     },
     companyName: {
       type: String,
-      required: true,
     },
     email: {
       type: String,
-      required: true,
     },
     whatsappNumber: {
       type: String,

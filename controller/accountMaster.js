@@ -505,9 +505,9 @@ exports.createPublicLead = async (req, res) => {
   try {
     const { name, companyName, email, whatsappNumber, notes } = req.body;
 
-    if (!name || !companyName || !email || !whatsappNumber) {
+    if (!whatsappNumber) {
       throw new Error(
-        "Name, Company Name, Email, and WhatsApp Number are required",
+        "WhatsApp Number is required",
       );
     }
 

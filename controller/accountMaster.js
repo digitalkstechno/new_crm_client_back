@@ -530,7 +530,7 @@ exports.createPublicLead = async (req, res) => {
 
     const lead = await PUBLICLEAD.create(body);
 
-    const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu_doc/pdffile/4b4a54315f7c4dae8b7999568b17b403.pdf";
+    const profilePdfUrl = "https://drive.google.com/file/d/1MWFcKHKnOgLx7_ONSK_obxOi0GqcL8YX/view?usp=sharing";
 
     // Send WhatsApp message
     try {

@@ -530,76 +530,82 @@ exports.createPublicLead = async (req, res) => {
 
     const lead = await PUBLICLEAD.create(body);
 
-    const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu_doc/pdffile/4b4a54315f7c4dae8b7999568b17b403.pdf";
-
-    // Send WhatsApp message
-    try {
-      await axios.post("https://app.11za.in/apis/template/sendTemplate", {
-        authToken: "U2FsdGVkX1/Y2AKCS/OFEpTatzmyelG8HyzOK43peOoCadFHc1egIws3V1cdJNhbDtazfsR5EVfebTtq9hC1HueSpb9jMegs6ZqVpSd9Z9VCLmzi7zNKKF/RLD7Bj2YaXlEFgOYSP4v6SDZqDZzybxbsvZkg692Z44/XTtPJpYXyiEhNwKF5WtX1P1bYbjkD",
-        name: name,
-        sendto: whatsappNumber,
-        originWebsite: "https://www.mozudesign.com/",
-        templateName: "expo_msg",
-        language: "en",
-        myfile: profilePdfUrl,
-        myfileName: "Mozu Catalogue 2026.pdf",
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': 'connect.sid=s%3AOjpBg4Q2xQNOtQTSTi6Ac7c27b6IyV7x.zJBnTie8yN9hqKUBGQBwSftIg9LPEUYK%2BQ%2FGaWcqEcs'
-        }
-      });
-    } catch (waError) {
-      console.error("Error sending WhatsApp message:", waError.response?.data || waError.message);
-    }
-
-    // Send thank you email to customer
-    try {
-      const subject = "Connect with Mozu - Abhishek Poddar";
-      const html = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <div style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">Mozu Design</h1>
-          </div>
-          <div style="padding: 40px 30px; background-color: white; line-height: 1.6;">
-            <p style="font-size: 16px;">Hello,</p>
-            <p style="font-size: 16px;">I’m <strong>Abhishek Poddar</strong>, Co-Founder at brand <strong>Mozu</strong>.</p>
-            
-            <p style="font-size: 16px;">We are Manufacturer specializing in high-quality <strong>Powerbanks, Wireless Earbuds, Bluetooth Speakers</strong>, and other trending electronic accessories.</p>
-            
-            <p style="font-size: 16px;">Our in-house brand <strong>MOZU</strong> stands for performance, innovation, and trust — tailored for today’s smart users.</p>
-            
-            <p style="font-size: 16px;">We also cater extensively to the <strong>Corporate Gifting</strong> segment, offering fully customized tech solutions for events, promotions, and enterprise needs.</p>
-            
-            <p style="font-size: 16px;">If you're looking for quality products, or branded gifting ideas — feel free to connect. Would love to share more about how we can work together.</p>
-            
-            <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #0f172a;">
-              <p style="margin: 0; font-style: italic; color: #64748b;">Please find our product profile attached with this email.</p>
-            </div>
-          </div>
-          <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-            <p style="margin: 0; color: #94a3b8; font-size: 14px;">© ${new Date().getFullYear()} Mozu Design. All rights reserved.</p>
-          </div>
-        </div>
-      `;
-
-      const attachments = [
-        {
-          filename: 'Mozu_Profile.pdf',
-          path: profilePdfUrl
-        }
-      ];
-
-      await sendMailasync(email, subject, html, attachments);
-    } catch (mailError) {
-      console.error("Error sending thank you email:", mailError);
-    }
-
-    return res.status(201).json({
+    // Send success response immediately so the user doesn't wait
+    res.status(201).json({
       status: "Success",
       message: "Lead submitted successfully",
       data: lead,
     });
+
+    // Send notifications in the background
+    (async () => {
+      const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu_doc/pdffile/4b4a54315f7c4dae8b7999568b17b403.pdf";
+
+      // Send WhatsApp message
+      try {
+        await axios.post("https://app.11za.in/apis/template/sendTemplate", {
+          authToken: "U2FsdGVkX1/Y2AKCS/OFEpTatzmyelG8HyzOK43peOoCadFHc1egIws3V1cdJNhbDtazfsR5EVfebTtq9hC1HueSpb9jMegs6ZqVpSd9Z9VCLmzi7zNKKF/RLD7Bj2YaXlEFgOYSP4v6SDZqDZzybxbsvZkg692Z44/XTtPJpYXyiEhNwKF5WtX1P1bYbjkD",
+          name: name,
+          sendto: whatsappNumber,
+          originWebsite: "https://www.mozudesign.com/",
+          templateName: "expo_msg",
+          language: "en",
+          myfile: profilePdfUrl,
+          myfileName: "Mozu Catalogue 2026.pdf",
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'connect.sid=s%3AOjpBg4Q2xQNOtQTSTi6Ac7c27b6IyV7x.zJBnTie8yN9hqKUBGQBwSftIg9LPEUYK%2BQ%2FGaWcqEcs'
+          }
+        });
+      } catch (waError) {
+        console.error("Error sending WhatsApp message in background:", waError.response?.data || waError.message);
+      }
+
+      // Send thank you email to customer if email is provided
+      if (email) {
+        try {
+          const subject = "Connect with Mozu - Abhishek Poddar";
+          const html = `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+              <div style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">Mozu Design</h1>
+              </div>
+              <div style="padding: 40px 30px; background-color: white; line-height: 1.6;">
+                <p style="font-size: 16px;">Hello,</p>
+                <p style="font-size: 16px;">I’m <strong>Abhishek Poddar</strong>, Co-Founder at brand <strong>Mozu</strong>.</p>
+                
+                <p style="font-size: 16px;">We are Manufacturer specializing in high-quality <strong>Powerbanks, Wireless Earbuds, Bluetooth Speakers</strong>, and other trending electronic accessories.</p>
+                
+                <p style="font-size: 16px;">Our in-house brand <strong>MOZU</strong> stands for performance, innovation, and trust — tailored for today’s smart users.</p>
+                
+                <p style="font-size: 16px;">We also cater extensively to the <strong>Corporate Gifting</strong> segment, offering fully customized tech solutions for events, promotions, and enterprise needs.</p>
+                
+                <p style="font-size: 16px;">If you're looking for quality products, or branded gifting ideas — feel free to connect. Would love to share more about how we can work together.</p>
+                
+                <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #0f172a;">
+                  <p style="margin: 0; font-style: italic; color: #64748b;">Please find our product profile attached with this email.</p>
+                </div>
+              </div>
+              <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; color: #94a3b8; font-size: 14px;">© ${new Date().getFullYear()} Mozu Design. All rights reserved.</p>
+              </div>
+            </div>
+          `;
+
+          const attachments = [
+            {
+              filename: 'Mozu_Profile.pdf',
+              path: profilePdfUrl
+            }
+          ];
+
+          await sendMailasync(email, subject, html, attachments);
+        } catch (mailError) {
+          console.error("Error sending thank you email in background:", mailError);
+        }
+      }
+    })();
   } catch (error) {
     return res.status(400).json({
       status: "Fail",

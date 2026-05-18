@@ -543,7 +543,7 @@ exports.createPublicLead = async (req, res) => {
 
       // Send WhatsApp message
       try {
-        await axios.post("https://app.11za.in/apis/template/sendTemplate", {
+        const waResponse = await axios.post("https://app.11za.in/apis/template/sendTemplate", {
           authToken: "U2FsdGVkX1/Y2AKCS/OFEpTatzmyelG8HyzOK43peOoCadFHc1egIws3V1cdJNhbDtazfsR5EVfebTtq9hC1HueSpb9jMegs6ZqVpSd9Z9VCLmzi7zNKKF/RLD7Bj2YaXlEFgOYSP4v6SDZqDZzybxbsvZkg692Z44/XTtPJpYXyiEhNwKF5WtX1P1bYbjkD",
           name: name,
           sendto: whatsappNumber,
@@ -558,6 +558,7 @@ exports.createPublicLead = async (req, res) => {
             'Cookie': 'connect.sid=s%3AOjpBg4Q2xQNOtQTSTi6Ac7c27b6IyV7x.zJBnTie8yN9hqKUBGQBwSftIg9LPEUYK%2BQ%2FGaWcqEcs'
           }
         });
+        console.log("WhatsApp message sent successfully:", waResponse.data);
       } catch (waError) {
         console.error("Error sending WhatsApp message in background:", waError.response?.data || waError.message);
       }
@@ -601,6 +602,7 @@ exports.createPublicLead = async (req, res) => {
           ];
 
           await sendMailasync(email, subject, html, attachments);
+          console.log("Email sent successfully to:", email);
         } catch (mailError) {
           console.error("Error sending thank you email in background:", mailError);
         }

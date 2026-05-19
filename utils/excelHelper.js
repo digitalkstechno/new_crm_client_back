@@ -291,3 +291,116 @@ exports.parseImportExcel = async (buffer) => {
 
   return { accounts, errors };
 };
+
+exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Public Leads');
+
+  sheet.columns = [
+    { header: 'Name', key: 'name', width: 25 },
+    { header: 'Company Name', key: 'companyName', width: 25 },
+    { header: 'Email', key: 'email', width: 25 },
+    { header: 'WhatsApp Number', key: 'whatsappNumber', width: 20 },
+    { header: 'Notes', key: 'notes', width: 30 },
+    { header: 'Created At', key: 'createdAt', width: 20 },
+    { header: 'Documents (Click to view)', key: 'documents', width: 30 },
+    { header: 'Image Preview', key: 'imagePreview', width: 20 }
+  ];
+
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+  sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  sheet.getRow(1).height = 25;
+
+  let currentRow = 2;
+
+  for (const lead of leads) {
+    const docLinks = [];
+    let hasImage = false;
+    let imageFilename = null;
+
+    if (lead.attachments && lead.attachments.length > 0) {
+      lead.attachments.forEach((file, index) => {
+        const fileUrl = `${baseUrl}/uploads/publicLeads/${file}`;
+        docLinks.push({ text: `Doc ${index + 1}`, hyperlink: fileUrl });
+        
+        // Check if this is an image for preview
+        const isImage = file.match(/\.(jpeg|jpg|png|gif)$/i);
+        if (isImage && !hasImage) {
+          hasImage = true;
+          imageFilename = file;
+        }
+      });
+    }
+
+    const rowData = {
+      name: lead.name || '',
+      companyName: lead.companyName || '',
+      email: lead.email || '',
+      whatsappNumber: lead.whatsappNumber || '',
+      notes: lead.notes || '',
+      createdAt: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
+      documents: docLinks.length > 0 ? docLinks.map(l => l.text).join('\n') : '-'
+    };
+
+    const row = sheet.addRow(rowData);
+    row.height = 65; // Set row height to accommodate image preview nicely
+    row.alignment = { vertical: 'middle', horizontal: 'left' };
+
+    // Make the documents cell clickable with hyperlink
+    if (docLinks.length === 1) {
+      const cell = sheet.getCell(`G${currentRow}`);
+      cell.value = {
+        text: docLinks[0].text,
+        hyperlink: docLinks[0].hyperlink
+      };
+      cell.font = { color: { argb: 'FF0000FF' }, underline: true };
+    } else if (docLinks.length > 1) {
+      const cell = sheet.getCell(`G${currentRow}`);
+      cell.value = {
+        text: `View Attachments (${docLinks.length})`,
+        hyperlink: docLinks[0].hyperlink
+      };
+      cell.font = { color: { argb: 'FF0000FF' }, underline: true };
+    }
+
+    // Embed the actual image inside the cell if it is an image
+    if (hasImage && imageFilename) {
+      const localFilePath = path.join(__dirname, '..', 'public', 'uploads', 'publicLeads', imageFilename);
+      if (fs.existsSync(localFilePath)) {
+        try {
+          const extension = imageFilename.split('.').pop().toLowerCase();
+          const extMapped = extension === 'jpg' ? 'jpeg' : extension;
+          
+          if (['png', 'jpeg', 'gif'].includes(extMapped)) {
+            const imageId = workbook.addImage({
+              filename: localFilePath,
+              extension: extMapped,
+            });
+
+            sheet.addImage(imageId, {
+              tl: { col: 7.2, row: currentRow - 1 + 0.1 },
+              ext: { width: 60, height: 60 }
+            });
+            
+            sheet.getCell(`H${currentRow}`).value = '';
+          }
+        } catch (imgError) {
+          console.error("Error adding image to excel row:", imgError);
+          sheet.getCell(`H${currentRow}`).value = 'Image Error';
+        }
+      } else {
+        sheet.getCell(`H${currentRow}`).value = 'File Missing';
+      }
+    } else {
+      sheet.getCell(`H${currentRow}`).value = '-';
+    }
+
+    currentRow++;
+  }
+
+  return workbook;
+};

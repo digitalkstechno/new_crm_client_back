@@ -7,6 +7,7 @@ const {
   generateSampleExcel,
   generateExportExcel,
   parseImportExcel,
+  generateExportExcelPublicLeads,
 } = require("../utils/excelHelper");
 const {
   validateEmail,
@@ -659,6 +660,52 @@ exports.fetchAllPublicLeads = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
+exports.exportPublicLeads = async (req, res) => {
+  try {
+    const query = {
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    };
+
+    const leads = await PUBLICLEAD.find(query).sort({ createdAt: -1 });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const workbook = await generateExportExcelPublicLeads(leads, baseUrl);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=PublicLeads_Export.xlsx",
+    );
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    return res.status(500).json({ status: "Fail", message: error.message });
+  }
+};
+
+exports.deletePublicLead = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const lead = await PUBLICLEAD.findById(id);
+    if (!lead) throw new Error("Public lead not found");
+
+    await PUBLICLEAD.findByIdAndUpdate(id, { isDeleted: true });
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Public lead deleted successfully",
+    });
+  } catch (error) {
+    return res.status(404).json({
       status: "Fail",
       message: error.message,
     });

@@ -1,4 +1,4 @@
-﻿const LEAD = require("../model/lead");
+const LEAD = require("../model/lead");
 const { validatePositiveNumber, validateRequiredField } = require("../utils/validation");
 
 /* =========================
@@ -140,6 +140,38 @@ exports.fetchAllLeads = async (req, res) => {
           { accountMaster: { $in: accountMasterIds } }
         ],
       });
+    }
+
+    const isOem = req.query.isOem === 'true';
+
+    // Find OEM CustomizationTypes
+    const oemCustomizationTypes = await require("../model/customizationType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemCustomIds = oemCustomizationTypes.map(c => c._id);
+
+    // Find OEM ClientTypes
+    const oemClientTypes = await require("../model/clientType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemClientTypeIds = oemClientTypes.map(c => c._id);
+
+    // Find AccountMasters with OEM ClientTypes
+    const oemAccountMasters = await require("../model/accountMaster").find({
+      sourcebyTypeOfClient: { $in: oemClientTypeIds }
+    }).select('_id');
+    const oemAccountMasterIds = oemAccountMasters.map(a => a._id);
+
+    if (isOem) {
+      query.$and.push({
+        $or: [
+          { "items.customizationType": { $in: oemCustomIds } },
+          { accountMaster: { $in: oemAccountMasterIds } }
+        ]
+      });
+    } else {
+      query.$and.push({ "items.customizationType": { $nin: oemCustomIds } });
+      query.$and.push({ accountMaster: { $nin: oemAccountMasterIds } });
     }
 
     const totalRecords = await LEAD.countDocuments(query);
@@ -338,8 +370,42 @@ exports.fetchLeadsByStatus = async (req, res) => {
 
     const query = {
       leadStatus: status,
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] }
+      ]
     };
+
+    const isOem = req.query.isOem === 'true';
+
+    // Find OEM CustomizationTypes
+    const oemCustomizationTypes = await require("../model/customizationType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemCustomIds = oemCustomizationTypes.map(c => c._id);
+
+    // Find OEM ClientTypes
+    const oemClientTypes = await require("../model/clientType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemClientTypeIds = oemClientTypes.map(c => c._id);
+
+    // Find AccountMasters with OEM ClientTypes
+    const oemAccountMasters = await require("../model/accountMaster").find({
+      sourcebyTypeOfClient: { $in: oemClientTypeIds }
+    }).select('_id');
+    const oemAccountMasterIds = oemAccountMasters.map(a => a._id);
+
+    if (isOem) {
+      query.$and.push({
+        $or: [
+          { "items.customizationType": { $in: oemCustomIds } },
+          { accountMaster: { $in: oemAccountMasterIds } }
+        ]
+      });
+    } else {
+      query.$and.push({ "items.customizationType": { $nin: oemCustomIds } });
+      query.$and.push({ accountMaster: { $nin: oemAccountMasterIds } });
+    }
 
     const totalRecords = await LEAD.countDocuments(query);
 

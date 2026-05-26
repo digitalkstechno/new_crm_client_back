@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const multer = require('multer');
 const createUploader = require("../utils/multer");
-// const upload = createUploader("uploads/publicLeads");
+const muupload = createUploader("uploads/publicLeads");
 const upload = multer({ storage: multer.memoryStorage() });
 const authMiddleware = require("../middleware/auth");
 const {
@@ -22,7 +22,7 @@ const {
 } = require("../controller/accountMaster");
 
 router.post("/public", createPublicAccountMaster);
-router.post("/public-lead", upload.array("attachments"), createPublicLead);
+router.post("/public-lead", muupload.array("attachments"), createPublicLead);
 router.get("/public-lead", fetchAllPublicLeads);
 router.get("/public-lead/export", authMiddleware, exportPublicLeads);
 router.delete("/public-lead/:id", authMiddleware, deletePublicLead);

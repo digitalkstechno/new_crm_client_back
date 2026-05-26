@@ -28,7 +28,7 @@ router.get("/public-lead/export", authMiddleware, exportPublicLeads);
 router.delete("/public-lead/:id", authMiddleware, deletePublicLead);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);
-router.post("/import", authMiddleware, upload.array("attachments"), importAccountMaster);
+router.post("/import", authMiddleware, upload.single("file"), importAccountMaster);
 router.post("/", authMiddleware, createAccountMaster);
 router.get("/", authMiddleware, fetchAllAccountMaster);
 router.get("/:id", authMiddleware, fetchAccountMasterById);

@@ -3,41 +3,28 @@ const MODELSUGGESTION = require("../model/modelSuggestion");
 exports.createmodelSuggestion = async (req, res) => {
   try {
     const { modelNo, color, rate, gst, category } = req.body;
+    const image = req.file ? `/uploads/${req.file.filename}` : "";
+
     let verify = await MODELSUGGESTION.findOne({ modelNo, color, category });
-    
+
     if (verify && verify.isDeleted) {
       const reactivated = await MODELSUGGESTION.findByIdAndUpdate(
         verify._id,
-        { modelNo, color, rate, gst, category, isDeleted: false },
+        { modelNo, color, rate, gst, category, image, isDeleted: false },
         { new: true }
       );
-      return res.status(201).json({
-        status: "Success",
-        message: "Model Suggestion reactivated successfully",
-        data: reactivated,
-      });
+      return res.status(201).json({ status: "Success", data: reactivated });
     }
-    
+
     if (verify) throw new Error("Model Suggestion already exists");
 
     const Details = await MODELSUGGESTION.create({
-      modelNo,
-      color,
-      rate,
-      gst,
-      category,
+      modelNo, color, rate, gst, category, image,
     });
 
-    return res.status(201).json({
-      status: "Success",
-      message: "Model Suggestion created successfully",
-      data: Details,
-    });
+    return res.status(201).json({ status: "Success", data: Details });
   } catch (error) {
-    return res.status(400).json({
-      status: "Fail",
-      message: error.message,
-    });
+    return res.status(400).json({ status: "Fail", message: error.message });
   }
 };
 
@@ -92,11 +79,11 @@ exports.fetchAllModelSuggestions = async (req, res) => {
 exports.fetchModelsByCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const models = await MODELSUGGESTION.find({ 
-      category: categoryId, 
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] 
+    const models = await MODELSUGGESTION.find({
+      category: categoryId,
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
     }).populate('category').populate('color');
-    
+
     return res.status(200).json({
       status: "Success",
       message: "Models fetched successfully",
@@ -134,28 +121,19 @@ exports.ModelSuggestionUpdate = async (req, res) => {
   try {
     let modelId = req.params.id;
     let oldModel = await MODELSUGGESTION.findById(modelId);
+    if (!oldModel) throw new Error("Model Suggestion not found");
 
-    if (!oldModel) {
-      throw new Error("Model Suggestion not found");
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.image = `/uploads/${req.file.filename}`;
     }
 
     let updatedModel = await MODELSUGGESTION.findByIdAndUpdate(
-      modelId,
-      req.body,
-      {
-        new: true,
-      },
+      modelId, updateData, { new: true }
     );
-    return res.status(200).json({
-      status: "Success",
-      message: "Model Suggestion updated successfully",
-      data: updatedModel,
-    });
+    return res.status(200).json({ status: "Success", data: updatedModel });
   } catch (error) {
-    return res.status(404).json({
-      status: "Fail",
-      message: error.message,
-    });
+    return res.status(404).json({ status: "Fail", message: error.message });
   }
 };
 

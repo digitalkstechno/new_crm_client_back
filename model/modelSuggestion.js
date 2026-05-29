@@ -25,11 +25,15 @@ let modelSuggestionSchema = new Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref : 'InquiryCategory'
+      ref: 'InquiryCategory'
     },
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+    image: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true },

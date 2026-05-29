@@ -501,6 +501,7 @@ exports.getDashboardStats = async (req, res) => {
     }
 
     const statusCounts = {};
+    const statusAmounts = {};
     for (const status of req.permissions) {
       const count = await LEAD.countDocuments({
         leadStatus: status,
@@ -508,12 +509,41 @@ exports.getDashboardStats = async (req, res) => {
         ...dateFilter
       });
       statusCounts[status] = count;
+      const matchQuery = {
+        leadStatus: status,
+        // isDeleted: { $ne: true },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      };
+      if (startDate && endDate) {
+        matchQuery.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+      const amountAgg = await LEAD.aggregate([
+        { $match: { leadStatus: status } },
+        {
+          $addFields: {
+            numericAmount: {
+              $toDouble: "$totalAmount"
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$numericAmount" }
+          }
+        }
+      ]);
+      statusAmounts[status] = amountAgg[0]?.total?.toFixed(2) || "0.00";
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+
 
     const todayFollowUps = await LEAD.find({
       leadStatus: "Follow Up",
@@ -715,6 +745,7 @@ exports.getDashboardStats = async (req, res) => {
       message: "Dashboard stats fetched successfully",
       data: {
         statusCounts,
+        statusAmounts,
         todayFollowUps: followUpsWithDetails,
         paymentStats: {
           totalRevenue: totalRevenue.toFixed(2),
@@ -801,6 +832,7 @@ exports.getGraphData = async (req, res) => {
 
     // Lead Status Graph Data
     const statusCounts = {};
+
     for (const status of req.permissions) {
       const count = await LEAD.countDocuments({
         leadStatus: status,

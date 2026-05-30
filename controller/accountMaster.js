@@ -540,7 +540,7 @@ exports.createPublicLead = async (req, res) => {
 
     // Send notifications in the background
     (async () => {
-      const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu_doc/pdffile/4b4a54315f7c4dae8b7999568b17b403.pdf";
+      const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu/mozu_brochure/67aecb8e5a664ae5a7d8219bc6e59917.pdf";
 
       // Send WhatsApp message
       try {
@@ -549,10 +549,17 @@ exports.createPublicLead = async (req, res) => {
           name: name,
           sendto: whatsappNumber,
           originWebsite: "https://www.mozudesign.com/",
-          templateName: "expo_msg",
+          templateName: "catalog_upt",
           language: "en",
+          data: [
+            "I’m Abhishek Poddar, Co-Founder at brand Mozu",
+            "We are Manufacturer specializing in high-quality Powerbanks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
+            "Our in-house brand MOZU stands for performance, innovation, and trust — tailored for today’s smart users.",
+            "We also cater extensively to the Corporate Gifting segment, offering fully customized tech solutions for events, promotions, and enterprise needs.",
+            "If you're looking for quality products, or branded gifting ideas — feel free to connect on +91 93133 76846 Would love to share more about how we can work together."
+          ],
           myfile: profilePdfUrl,
-          myfileName: "Mozu Catalogue 2026.pdf",
+          // myfileName: "Mozu Catalogue 2026.pdf",
         }, {
           headers: {
             'Content-Type': 'application/json',
@@ -630,13 +637,13 @@ exports.fetchAllPublicLeads = async (req, res) => {
 
         search
           ? {
-              $or: [
-                { name: { $regex: search, $options: "i" } },
-                { companyName: { $regex: search, $options: "i" } },
-                { email: { $regex: search, $options: "i" } },
-                { whatsappNumber: { $regex: search } },
-              ],
-            }
+            $or: [
+              { name: { $regex: search, $options: "i" } },
+              { companyName: { $regex: search, $options: "i" } },
+              { email: { $regex: search, $options: "i" } },
+              { whatsappNumber: { $regex: search } },
+            ],
+          }
           : {},
       ],
     };

@@ -541,6 +541,7 @@ exports.createPublicLead = async (req, res) => {
     // Send notifications in the background
     (async () => {
       const profilePdfUrl = "https://service.digitalks.co.in/s3docs/mozu/mozu_brochure/67aecb8e5a664ae5a7d8219bc6e59917.pdf";
+      const imgUrl = process.env.IMG_LOGO
 
       // Send WhatsApp message
       try {
@@ -558,7 +559,7 @@ exports.createPublicLead = async (req, res) => {
             "We also cater extensively to the Corporate Gifting segment, offering fully customized tech solutions for events, promotions, and enterprise needs.",
             "If you're looking for quality products, or branded gifting ideas — feel free to connect on +91 93133 76846 Would love to share more about how we can work together."
           ],
-          myfile: profilePdfUrl,
+          myfile: imgUrl,
           // myfileName: "Mozu Catalogue 2026.pdf",
         }, {
           headers: {

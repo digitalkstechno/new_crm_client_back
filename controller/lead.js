@@ -553,7 +553,7 @@ exports.addPayment = async (req, res) => {
 exports.getDashboardStats = async (req, res) => {
   try {
     const { LEAD_STATUSES } = require("../constants/leadStatus");
-    const { startDate, endDate, topLimit } = req.query;
+    const { startDate, endDate, topLimit, isOem } = req.query;
     const limit = parseInt(topLimit) || 5;
 
     let dateFilter = {};
@@ -566,14 +566,70 @@ exports.getDashboardStats = async (req, res) => {
       };
     }
 
+    const oemCustomizationTypes = await require("../model/customizationType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemCustomIds = oemCustomizationTypes.map(c => c._id);
+
+    const oemClientTypes = await require("../model/clientType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemClientTypeIds = oemClientTypes.map(c => c._id);
+
+    const oemAccountMasters = await require("../model/accountMaster").find({
+      sourcebyTypeOfClient: { $in: oemClientTypeIds }
+    }).select('_id');
+    const oemAccountMasterIds = oemAccountMasters.map(a => a._id);
+
+    // const oemCondition = isOem === 'true'
+    //   ? {
+    //     $or: [
+    //       { items: { $elemMatch: { customizationType: { $in: oemCustomIds } } } },
+    //       { accountMaster: { $in: oemAccountMasterIds } }
+    //     ]
+    //   }
+    //   : {
+    //     $nor: [
+    //       { items: { $elemMatch: { customizationType: { $in: oemCustomIds } } } },
+    //       { accountMaster: { $in: oemAccountMasterIds } }
+    //     ]
+    //   };
+
     const statusCounts = {};
     const statusAmounts = {};
     for (const status of req.permissions) {
-      const count = await LEAD.countDocuments({
-        leadStatus: status,
-        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-        ...dateFilter
-      });
+      // const count = await LEAD.countDocuments({
+      //   $and: [
+      //     { leadStatus: status },
+      //     { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+      //     oemCondition,
+      //     ...(Object.keys(dateFilter).length ? [dateFilter] : [])
+      //   ]
+      // });
+
+      const countQuery = {
+        $and: [
+          { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+          { leadStatus: status },
+        ],
+      };
+
+      if (isOem === 'true') {
+        countQuery.$and.push({
+          $or: [
+            { "items.customizationType": { $in: oemCustomIds } },
+            { accountMaster: { $in: oemAccountMasterIds } }
+          ]
+        });
+      } else {
+        countQuery.$and.push({ accountMaster: { $nin: oemAccountMasterIds } });
+      }
+
+      if (Object.keys(dateFilter).length) {
+        countQuery.$and.push(dateFilter);
+      }
+
+      const count = await LEAD.countDocuments(countQuery);
       statusCounts[status] = count;
       const matchQuery = {
         leadStatus: status,
@@ -644,17 +700,33 @@ exports.getDashboardStats = async (req, res) => {
       };
     });
 
-    const allLeads = await LEAD.find({
-      leadStatus: { $in: req.permissions },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-      ...dateFilter
-    })
+    // ADD THIS
+    const allLeadsQuery = {
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        { leadStatus: { $in: req.permissions } },
+      ],
+    };
+
+    if (isOem === 'true') {
+      allLeadsQuery.$and.push({
+        $or: [
+          { "items.customizationType": { $in: oemCustomIds } },
+          { accountMaster: { $in: oemAccountMasterIds } }
+        ]
+      });
+    } else {
+      allLeadsQuery.$and.push({ accountMaster: { $nin: oemAccountMasterIds } });
+    }
+
+    if (Object.keys(dateFilter).length) {
+      allLeadsQuery.$and.push(dateFilter);
+    }
+
+    const allLeads = await LEAD.find(allLeadsQuery)
       .select("totalAmount paymentHistory accountMaster leadStatus items")
       .populate("accountMaster")
-      .populate({
-        path: "items.modelSuggestion",
-        populate: { path: "color" }
-      })
+      .populate({ path: "items.modelSuggestion", populate: { path: "color" } })
       .populate("items.inquiryCategory")
       .populate("items.customizationType");
 
@@ -771,13 +843,32 @@ exports.getDashboardStats = async (req, res) => {
       .sort((a, b) => b.avgRate - a.avgRate);
 
     const ACCOUNTMASTER = require("../model/accountMaster");
+    // const totalAccounts = await ACCOUNTMASTER.countDocuments({
+    //   $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+    // });
+
     const totalAccounts = await ACCOUNTMASTER.countDocuments({
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        ...(isOem === 'true'
+          ? [{ sourcebyTypeOfClient: { $in: oemClientTypeIds } }]
+          : [{ sourcebyTypeOfClient: { $nin: oemClientTypeIds } }]
+        )
+      ]
     });
 
-    const convertedAccountIds = [...new Set(allLeads.map(lead => lead.accountMaster?._id?.toString()).filter(Boolean))];
-    const convertedCount = convertedAccountIds.length;
-    const notConvertedCount = totalAccounts - convertedCount;
+    // const convertedAccountIds = [...new Set(allLeads.map(lead => lead.accountMaster?._id?.toString()).filter(Boolean))];
+    // const convertedCount = convertedAccountIds.length;
+    // const notConvertedCount = totalAccounts - convertedCount;
+
+    const convertedCount = allLeads.length; // Total leads count
+    const convertedAccountIds = [...new Set(allLeads.map(lead => {
+      if (lead.accountMaster && typeof lead.accountMaster === 'object') {
+        return lead.accountMaster._id?.toString();
+      }
+      return lead.accountMaster?.toString();
+    }).filter(Boolean))];
+    const notConvertedCount = totalAccounts - convertedAccountIds.length;
 
     // Upcoming Deliveries (Next 7 Days)
     const next7Days = new Date();
@@ -843,7 +934,7 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getGraphData = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, isOem } = req.query;
 
     let dateFilter = {};
     if (startDate && endDate) {
@@ -855,11 +946,45 @@ exports.getGraphData = async (req, res) => {
       };
     }
 
-    const allLeads = await LEAD.find({
-      leadStatus: { $in: req.permissions },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-      ...dateFilter
-    }).select("totalAmount paymentHistory leadStatus accountMaster createdAt");
+    const oemClientTypes = await require("../model/clientType").find({
+      name: { $regex: /o\.e\.m/i }
+    }).select('_id');
+    const oemClientTypeIds = oemClientTypes.map(c => c._id);
+
+    const oemAccountMasters = await require("../model/accountMaster").find({
+      sourcebyTypeOfClient: { $in: oemClientTypeIds }
+    }).select('_id');
+    const oemAccountMasterIds = oemAccountMasters.map(a => a._id);
+
+    // const allLeads = await LEAD.find({
+    //   leadStatus: { $in: req.permissions },
+    //   $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    //   ...dateFilter
+    // }).select("totalAmount paymentHistory leadStatus accountMaster createdAt");
+
+    const allLeadsQuery = {
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        { leadStatus: { $in: req.permissions } },
+      ],
+    };
+
+    if (isOem === 'true') {
+      allLeadsQuery.$and.push({
+        $or: [
+          { accountMaster: { $in: oemAccountMasterIds } }
+        ]
+      });
+    } else {
+      allLeadsQuery.$and.push({ accountMaster: { $nin: oemAccountMasterIds } });
+    }
+
+    if (Object.keys(dateFilter).length) {
+      allLeadsQuery.$and.push(dateFilter);
+    }
+
+    const allLeads = await LEAD.find(allLeadsQuery)
+      .select("totalAmount paymentHistory leadStatus accountMaster createdAt");
 
     // Separate leads for pending calculation (only Dispatch, Completed, Final Payment)
     const pendingStatusLeads = allLeads.filter(lead =>
@@ -901,9 +1026,15 @@ exports.getGraphData = async (req, res) => {
 
     for (const status of req.permissions) {
       const count = await LEAD.countDocuments({
-        leadStatus: status,
-        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-        ...dateFilter
+        $and: [
+          { leadStatus: status },
+          { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+          ...(isOem === 'true'
+            ? [{ accountMaster: { $in: oemAccountMasterIds } }]
+            : [{ accountMaster: { $nin: oemAccountMasterIds } }]
+          ),
+          ...(Object.keys(dateFilter).length ? [dateFilter] : [])
+        ]
       });
       if (count > 0) {
         statusCounts[status] = count;

@@ -550,15 +550,15 @@ exports.createPublicLead = async (req, res) => {
           name: name,
           sendto: whatsappNumber,
           originWebsite: "https://www.mozudesign.com/",
-          templateName: "catalog_upt",
+          templateName: "delhi_expo_copy",
           language: "en",
-          data: [
-            "I’m Abhishek Poddar, Co-Founder at brand Mozu",
-            "We are Manufacturer specializing in high-quality Powerbanks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
-            "Our in-house brand MOZU stands for performance, innovation, and trust — tailored for today’s smart users.",
-            "We also cater extensively to the Corporate Gifting segment, offering fully customized tech solutions for events, promotions, and enterprise needs.",
-            "If you're looking for quality products, or branded gifting ideas — feel free to connect on +91 93133 76846 Would love to share more about how we can work together."
-          ],
+          // data: [
+          //   "I’m Abhishek Poddar, Co-Founder at brand Mozu",
+          //   "We are Manufacturer specializing in high-quality Powerbanks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
+          //   "Our in-house brand MOZU stands for performance, innovation, and trust — tailored for today’s smart users.",
+          //   "We also cater extensively to the Corporate Gifting segment, offering fully customized tech solutions for events, promotions, and enterprise needs.",
+          //   "If you're looking for quality products, or branded gifting ideas — feel free to connect on +91 93133 76846 Would love to share more about how we can work together."
+          // ],
           myfile: imgUrl,
           // myfileName: "Mozu Catalogue 2026.pdf",
         }, {

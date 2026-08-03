@@ -60,37 +60,37 @@ exports.generateSampleExcel = async () => {
   sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
 
   // Add dropdowns for Source Type (Column K - 11)
-  const clientTypeNames = clientTypes.map(ct => ct.name);
-  if (clientTypeNames.length > 0) {
-    for (let i = 2; i <= 100; i++) {
+  if (clientTypes.length > 0) {
+    const endRow = clientTypes.length + 1;
+    for (let i = 2; i <= 500; i++) {
       sheet.getCell(`K${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`"${clientTypeNames.join(',')}"`]
+        formulae: [`'Client Types'!$A$2:$A$${endRow}`]
       };
     }
   }
 
   // Add dropdowns for Source From (Column L - 12)
-  const sourceFromNames = sourceFroms.map(sf => sf.name);
-  if (sourceFromNames.length > 0) {
-    for (let i = 2; i <= 100; i++) {
+  if (sourceFroms.length > 0) {
+    const endRow = sourceFroms.length + 1;
+    for (let i = 2; i <= 500; i++) {
       sheet.getCell(`L${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`"${sourceFromNames.join(',')}"`]
+        formulae: [`'Source From'!$A$2:$A$${endRow}`]
       };
     }
   }
 
   // Add dropdowns for Assign By (Column M - 13)
-  const staffNames = staffList.map(s => s.fullName);
-  if (staffNames.length > 0) {
-    for (let i = 2; i <= 100; i++) {
+  if (staffList.length > 0) {
+    const endRow = staffList.length + 1;
+    for (let i = 2; i <= 500; i++) {
       sheet.getCell(`M${i}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: [`"${staffNames.join(',')}"`]
+        formulae: [`'Staff List'!$A$2:$A$${endRow}`]
       };
     }
   }
@@ -219,15 +219,6 @@ exports.parseImportExcel = async (buffer) => {
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header
 
-    const sourceTypeName = row.getCell(11).value;
-    const sourceFromName = row.getCell(12).value;
-    const assignByName = row.getCell(13).value;
-
-    // Find IDs from names
-    const clientType = clientTypes.find(ct => ct.name === sourceTypeName);
-    const sourceFrom = sourceFroms.find(sf => sf.name === sourceFromName);
-    const staff = staffList.find(s => s.fullName === assignByName);
-
     // Helper function to extract text from Excel cell values
     const extractText = (cellValue) => {
       if (!cellValue) return '';
@@ -246,6 +237,15 @@ exports.parseImportExcel = async (buffer) => {
       }
       return String(cellValue);
     };
+
+    const sourceTypeName = extractText(row.getCell(11).value).trim();
+    const sourceFromName = extractText(row.getCell(12).value).trim();
+    const assignByName = extractText(row.getCell(13).value).trim();
+
+    // Find IDs from names
+    const clientType = clientTypes.find(ct => ct.name === sourceTypeName);
+    const sourceFrom = sourceFroms.find(sf => sf.name === sourceFromName);
+    const staff = staffList.find(s => s.fullName === assignByName);
 
     // Extract all cell values as text
     let companyName = extractText(row.getCell(1).value);

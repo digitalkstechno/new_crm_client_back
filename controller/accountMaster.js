@@ -559,7 +559,7 @@ exports.createPublicLead = async (req, res) => {
             "Please find our product catalogue attached for your reference. We would be happy to explore opportunities to work together and support your product or corporate gifting requirements.",
             "Feel free to connect with us at +919537203022 for any queries or requirements. Looking forward to staying connected and working together."
           ],
-          myfile: "https://11zamedia.11za.in/tastechinnovationspvtltd/Template/DOC/sample-316357-648099.pdf",
+          myfile: imgUrl,
           // myfileName: "Mozu Catalogue 2026.pdf",
         }, {
           headers: {

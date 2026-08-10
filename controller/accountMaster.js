@@ -550,16 +550,16 @@ exports.createPublicLead = async (req, res) => {
           name: name,
           sendto: whatsappNumber,
           originWebsite: "https://www.mozudesign.com/",
-          templateName: "delhi_expo_copy",
+          templateName: "expo_3_copy",
           language: "en",
-          // data: [
-          //   "I’m Abhishek Poddar, Co-Founder at brand Mozu",
-          //   "We are Manufacturer specializing in high-quality Powerbanks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
-          //   "Our in-house brand MOZU stands for performance, innovation, and trust — tailored for today’s smart users.",
-          //   "We also cater extensively to the Corporate Gifting segment, offering fully customized tech solutions for events, promotions, and enterprise needs.",
-          //   "If you're looking for quality products, or branded gifting ideas — feel free to connect on +91 93133 76846 Would love to share more about how we can work together."
-          // ],
-          myfile: imgUrl,
+          data: [
+            "It was a pleasure meeting you at the Guj Gift Expo 2026, Ahmedabad",
+            "We are MOZU, a manufacturer specializing in high-quality Power Banks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
+            "Our in-house brand MOZU focuses on delivering products that combine performance, innovation, and reliability. We specialize in Corporate Gifting, offering customized tech products with your company logo and branding for events, promotions, employee gifting, and other business requirements.",
+            "Please find our product catalogue attached for your reference. We would be happy to explore opportunities to work together and support your product or corporate gifting requirements.",
+            "Feel free to connect with us at +919537203022 for any queries or requirements. Looking forward to staying connected and working together."
+          ],
+          myfile: "https://11zamedia.11za.in/tastechinnovationspvtltd/Template/DOC/sample-316357-648099.pdf",
           // myfileName: "Mozu Catalogue 2026.pdf",
         }, {
           headers: {

@@ -10,12 +10,10 @@ let modelSuggestionSchema = new Schema(
     },
     color: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: 'Color'
     },
     rate: {
       type: String,
-      required: true,
     },
     gst: {
       type: Number,

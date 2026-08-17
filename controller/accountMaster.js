@@ -504,7 +504,7 @@ exports.createPublicAccountMaster = async (req, res) => {
 
 exports.createPublicLead = async (req, res) => {
   try {
-    const { name, companyName, email, whatsappNumber, notes } = req.body;
+    const { name, companyName, email, whatsappNumber, notes, typeofclient } = req.body;
 
     if (!whatsappNumber) {
       throw new Error(
@@ -524,7 +524,7 @@ exports.createPublicLead = async (req, res) => {
 
     // Check for duplicate public lead (optional, but good practice)
 
-    const body = { name, companyName, email, whatsappNumber, notes };
+    const body = { name, companyName, email, whatsappNumber, notes, typeofclient };
     if (req.files?.length > 0) {
       body.attachments = req.files.map((file) => file.filename);
     }
@@ -605,8 +605,8 @@ exports.createPublicLead = async (req, res) => {
 
           const attachments = [
             {
-              filename: 'Mozu_Profile.pdf',
-              path: profilePdfUrl
+              filename: 'Mozu_Catalogue_2026.pdf',
+              path: imgUrl
             }
           ];
 

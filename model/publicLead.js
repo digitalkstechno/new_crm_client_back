@@ -17,6 +17,7 @@ const publicLeadSchema = new Schema(
       required: true,
     },
     attachments: [{ type: String }],
+    typeofclient: { type: mongoose.Schema.Types.ObjectId, ref: "ClientType" },
     notes: {
       type: String,
     },

@@ -6,6 +6,7 @@ const clientTypeController = require("../controller/clientType");
 router.post("/", authMiddleware, clientTypeController.createClientType);
 router.get("/", authMiddleware, clientTypeController.getAllClientTypes);
 router.get("/dropdown", authMiddleware, clientTypeController.getClientTypesDropdown);
+router.get("/public/dropdown", clientTypeController.getClientTypesDropdown);
 router.put("/:id", authMiddleware, clientTypeController.updateClientType);
 router.delete("/:id", authMiddleware, clientTypeController.deleteClientType);
 

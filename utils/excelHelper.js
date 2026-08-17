@@ -302,6 +302,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
   sheet.columns = [
     { header: 'Name', key: 'name', width: 25 },
     { header: 'Company Name', key: 'companyName', width: 25 },
+    { header: 'Client Type', key: 'typeofclient', width: 20 },
     { header: 'Email', key: 'email', width: 25 },
     { header: 'WhatsApp Number', key: 'whatsappNumber', width: 20 },
     { header: 'Notes', key: 'notes', width: 30 },
@@ -339,6 +340,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
     const rowData = {
       name: lead.name || '',
       companyName: lead.companyName || '',
+      typeofclient: lead.typeofclient ? lead.typeofclient.name : '',
       email: lead.email || '',
       whatsappNumber: lead.whatsappNumber || '',
       notes: lead.notes || '',

@@ -651,6 +651,7 @@ exports.fetchAllPublicLeads = async (req, res) => {
 
     const totalRecords = await PUBLICLEAD.countDocuments(query);
     const leads = await PUBLICLEAD.find(query)
+      .populate("typeofclient")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -680,7 +681,9 @@ exports.exportPublicLeads = async (req, res) => {
       $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
     };
 
-    const leads = await PUBLICLEAD.find(query).sort({ createdAt: -1 });
+    const leads = await PUBLICLEAD.find(query)
+      .populate("typeofclient")
+      .sort({ createdAt: -1 });
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const workbook = await generateExportExcelPublicLeads(leads, baseUrl);

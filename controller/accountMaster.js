@@ -553,7 +553,7 @@ exports.createPublicLead = async (req, res) => {
           templateName: "expo_3_copy",
           language: "en",
           data: [
-            "It was a pleasure meeting you at the Guj Gift Expo 2026, Ahmedabad",
+            "It was a pleasure meeting you at the Gift World Expo 2026, Banglore",
             "We are MOZU, a manufacturer specializing in high-quality Power Banks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.",
             "Our in-house brand MOZU focuses on delivering products that combine performance, innovation, and reliability. We specialize in Corporate Gifting, offering customized tech products with your company logo and branding for events, promotions, employee gifting, and other business requirements.",
             "Please find our product catalogue attached for your reference. We would be happy to explore opportunities to work together and support your product or corporate gifting requirements.",

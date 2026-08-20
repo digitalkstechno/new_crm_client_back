@@ -575,7 +575,7 @@ exports.createPublicLead = async (req, res) => {
       // Send thank you email to customer if email is provided
       if (email) {
         try {
-          const subject = "Connect with Mozu - Abhishek Poddar";
+          const subject = "Connect with Mozu ";
           const html = `
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
               <div style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 30px; text-align: center;">
@@ -583,16 +583,19 @@ exports.createPublicLead = async (req, res) => {
               </div>
               <div style="padding: 40px 30px; background-color: white; line-height: 1.6;">
                 <p style="font-size: 16px;">Hello,</p>
-                <p style="font-size: 16px;">I’m <strong>Abhishek Poddar</strong>, Co-Founder at brand <strong>Mozu</strong>.</p>
+                <p style="font-size: 16px;">It was a pleasure meeting you at the <b>Gift World Expo 2026, Banglore</b></p>
                 
-                <p style="font-size: 16px;">We are Manufacturer specializing in high-quality <strong>Powerbanks, Wireless Earbuds, Bluetooth Speakers</strong>, and other trending electronic accessories.</p>
+                <p style="font-size: 16px;">We are <b>MOZU</b>, a manufacturer specializing in high-quality Power Banks, Wireless Earbuds, Bluetooth Speakers, and other trending electronic accessories.</p>
                 
-                <p style="font-size: 16px;">Our in-house brand <strong>MOZU</strong> stands for performance, innovation, and trust — tailored for today’s smart users.</p>
+                <p style="font-size: 16px;">Our in-house brand MOZU focuses on delivering products that combine performance, innovation, and reliability. We specialize in Corporate Gifting, offering customized tech products with your company logo and branding for events, promotions, employee gifting, and other business requirements.</p>
                 
-                <p style="font-size: 16px;">We also cater extensively to the <strong>Corporate Gifting</strong> segment, offering fully customized tech solutions for events, promotions, and enterprise needs.</p>
+                <p style="font-size: 16px;">Please find our product catalogue attached for your reference. We would be happy to explore opportunities to work together and support your product or corporate gifting requirements.</p>
                 
-                <p style="font-size: 16px;">If you're looking for quality products, or branded gifting ideas — feel free to connect. Would love to share more about how we can work together.</p>
-                
+                <p style="font-size: 16px;">Feel free to connect with us at +919537203022 for any queries or requirements.</p>
+
+                <p style="font-size: 16px;">Looking forward to staying connected and working together.</p>
+
+                <p style="font-size: 16px;">Regards,<br>Team MOZU</p>                
                 <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #0f172a;">
                   <p style="margin: 0; font-style: italic; color: #64748b;">Please find our product profile attached with this email.</p>
                 </div>

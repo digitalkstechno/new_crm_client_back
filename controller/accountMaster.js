@@ -634,10 +634,20 @@ exports.fetchAllPublicLeads = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const search = req.query.search || "";
+    const { startDate, endDate } = req.query;
+
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.$lte = end;
+    }
 
     const query = {
       $and: [
         { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        ...(Object.keys(dateFilter).length > 0 ? [{ createdAt: dateFilter }] : []),
 
         search
           ? {
@@ -680,9 +690,23 @@ exports.fetchAllPublicLeads = async (req, res) => {
 
 exports.exportPublicLeads = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.$lte = end;
+    }
+
     const query = {
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }]
+      $and: [
+        { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+        ...(Object.keys(dateFilter).length > 0 ? [{ createdAt: dateFilter }] : [])
+      ]
     };
+
 
     const leads = await PUBLICLEAD.find(query)
       .populate("typeofclient")

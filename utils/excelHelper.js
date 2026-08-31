@@ -309,7 +309,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
     { header: 'Notes', key: 'notes', width: 30 },
     { header: 'Created At', key: 'createdAt', width: 20 },
     { header: 'Documents (Click to view)', key: 'documents', width: 30 },
-    { header: 'Image Preview', key: 'imagePreview', width: 20 }
+    { header: 'Image Preview', key: 'imagePreview', width: 12.5 }
   ];
 
   sheet.getRow(1).font = { bold: true };
@@ -330,7 +330,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
         docLinks.push({ text: `Doc ${index + 1}`, hyperlink: fileUrl });
 
         // Check if this is an image for preview
-        const isImage = file.match(/\.(jpeg|jpg|png|gif)$/i);
+        const isImage = file.match(/\.(jpeg|jpg|png|gif|webp)$/i);
         if (isImage && !hasImage) {
           hasImage = true;
           imageFilename = file;
@@ -380,7 +380,10 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
 
           if (['png', 'jpeg', 'gif', 'webp'].includes(extMapped)) {
             const compressedBuffer = await sharp(localFilePath)
-              .resize(200, 200, { fit: 'inside' })
+              .resize(200, 200, { 
+                fit: 'contain',
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+              })
               .jpeg({ quality: 60 })
               .toBuffer();
 
@@ -391,8 +394,8 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
 
             sheet.addImage(imageId, {
               tl: { col: 8, row: currentRow - 1 },
-              ext: { width: 60, height: 60 },
-              editAs: 'oneCell'
+              br: { col: 9, row: currentRow },
+              editAs: 'twoCell'
             });
 
             sheet.getCell(`I${currentRow}`).value = '';

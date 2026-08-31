@@ -391,8 +391,8 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
 
             sheet.addImage(imageId, {
               tl: { col: 8, row: currentRow - 1 },
-              br: { col: 9, row: currentRow },
-              editAs: 'twoCell'
+              ext: { width: 60, height: 60 },
+              editAs: 'oneCell'
             });
 
             sheet.getCell(`I${currentRow}`).value = '';

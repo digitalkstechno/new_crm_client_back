@@ -326,9 +326,9 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
 
     if (lead.attachments && lead.attachments.length > 0) {
       lead.attachments.forEach((file, index) => {
-        const fileUrl = `${baseUrl}/uploads/publicLeads/${file}`;
+        const fileUrl = `${baseUrl}/api/uploads/publicLeads/${file}`;
         docLinks.push({ text: `Doc ${index + 1}`, hyperlink: fileUrl });
-        
+
         // Check if this is an image for preview
         const isImage = file.match(/\.(jpeg|jpg|png|gif)$/i);
         if (isImage && !hasImage) {
@@ -377,7 +377,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
         try {
           const extension = imageFilename.split('.').pop().toLowerCase();
           const extMapped = extension === 'jpg' ? 'jpeg' : extension;
-          
+
           if (['png', 'jpeg', 'gif', 'webp'].includes(extMapped)) {
             const compressedBuffer = await sharp(localFilePath)
               .resize(200, 200, { fit: 'inside' })
@@ -393,7 +393,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
               tl: { col: 8.2, row: currentRow - 1 + 0.1 },
               ext: { width: 60, height: 60 }
             });
-            
+
             sheet.getCell(`I${currentRow}`).value = '';
           }
         } catch (imgError) {

@@ -295,6 +295,7 @@ exports.parseImportExcel = async (buffer) => {
 exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
   const fs = require('fs');
   const path = require('path');
+  const sharp = require('sharp');
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Public Leads');
@@ -354,14 +355,14 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
 
     // Make the documents cell clickable with hyperlink
     if (docLinks.length === 1) {
-      const cell = sheet.getCell(`G${currentRow}`);
+      const cell = sheet.getCell(`H${currentRow}`);
       cell.value = {
         text: docLinks[0].text,
         hyperlink: docLinks[0].hyperlink
       };
       cell.font = { color: { argb: 'FF0000FF' }, underline: true };
     } else if (docLinks.length > 1) {
-      const cell = sheet.getCell(`G${currentRow}`);
+      const cell = sheet.getCell(`H${currentRow}`);
       cell.value = {
         text: `View Attachments (${docLinks.length})`,
         hyperlink: docLinks[0].hyperlink
@@ -377,28 +378,33 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
           const extension = imageFilename.split('.').pop().toLowerCase();
           const extMapped = extension === 'jpg' ? 'jpeg' : extension;
           
-          if (['png', 'jpeg', 'gif'].includes(extMapped)) {
+          if (['png', 'jpeg', 'gif', 'webp'].includes(extMapped)) {
+            const compressedBuffer = await sharp(localFilePath)
+              .resize(200, 200, { fit: 'inside' })
+              .jpeg({ quality: 60 })
+              .toBuffer();
+
             const imageId = workbook.addImage({
-              filename: localFilePath,
-              extension: extMapped,
+              buffer: compressedBuffer,
+              extension: 'jpeg',
             });
 
             sheet.addImage(imageId, {
-              tl: { col: 7.2, row: currentRow - 1 + 0.1 },
+              tl: { col: 8.2, row: currentRow - 1 + 0.1 },
               ext: { width: 60, height: 60 }
             });
             
-            sheet.getCell(`H${currentRow}`).value = '';
+            sheet.getCell(`I${currentRow}`).value = '';
           }
         } catch (imgError) {
           console.error("Error adding image to excel row:", imgError);
-          sheet.getCell(`H${currentRow}`).value = 'Image Error';
+          sheet.getCell(`I${currentRow}`).value = 'Image Error';
         }
       } else {
-        sheet.getCell(`H${currentRow}`).value = 'File Missing';
+        sheet.getCell(`I${currentRow}`).value = 'File Missing';
       }
     } else {
-      sheet.getCell(`H${currentRow}`).value = '-';
+      sheet.getCell(`I${currentRow}`).value = '-';
     }
 
     currentRow++;

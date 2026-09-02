@@ -373,7 +373,7 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
     // Embed the actual image inside the cell if it is an image
     if (hasImage && imageFilename) {
       const localFilePath = path.join(__dirname, '..', 'public', 'uploads', 'publicLeads', imageFilename);
-      if (fs.existsSync(localFilePath)) {
+      if (fs.existsSync(localFilePath)) { 
         try {
           const extension = imageFilename.split('.').pop().toLowerCase();
           const extMapped = extension === 'jpg' ? 'jpeg' : extension;
@@ -393,9 +393,9 @@ exports.generateExportExcelPublicLeads = async (leads, baseUrl) => {
             });
 
             sheet.addImage(imageId, {
-              tl: { col: 8, row: currentRow - 1 },
-              br: { col: 9, row: currentRow },
-              editAs: 'twoCell'
+              tl: { col: 8.05, row: currentRow - 1 + 0.1 },
+              br: { col: 8.95, row: currentRow - 0.1 },
+              editAs: 'oneCell'
             });
 
             sheet.getCell(`I${currentRow}`).value = '';

@@ -729,6 +729,43 @@ exports.exportPublicLeads = async (req, res) => {
   }
 };
 
+exports.updatePublicLead = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { name, companyName, email, whatsappNumber, notes, typeofclient } = req.body;
+
+    if (email && !validateEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+
+    if (whatsappNumber && !validatePhone(whatsappNumber)) {
+      throw new Error(
+        "WhatsApp number must be exactly 12 digits (91 + 10 digits)",
+      );
+    }
+
+    const oldLead = await PUBLICLEAD.findById(id);
+    if (!oldLead) throw new Error("Public lead not found");
+
+    const updatedLead = await PUBLICLEAD.findByIdAndUpdate(
+      id,
+      { name, companyName, email, whatsappNumber, notes, typeofclient },
+      { new: true }
+    ).populate("typeofclient");
+
+    return res.status(200).json({
+      status: "Success",
+      message: "Public lead updated successfully",
+      data: updatedLead,
+    });
+  } catch (error) {
+    return res.status(404).json({
+      status: "Fail",
+      message: error.message,
+    });
+  }
+};
+
 exports.deletePublicLead = async (req, res) => {
   try {
     const id = req.params.id;

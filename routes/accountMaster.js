@@ -18,13 +18,15 @@ const {
   createPublicLead,
   fetchAllPublicLeads,
   exportPublicLeads,
-  deletePublicLead
+  deletePublicLead,
+  updatePublicLead
 } = require("../controller/accountMaster");
 
 router.post("/public", createPublicAccountMaster);
 router.post("/public-lead", muupload.array("attachments"), createPublicLead);
 router.get("/public-lead", fetchAllPublicLeads);
 router.get("/public-lead/export", authMiddleware, exportPublicLeads);
+router.put("/public-lead/:id", authMiddleware, updatePublicLead);
 router.delete("/public-lead/:id", authMiddleware, deletePublicLead);
 router.get("/sample-excel", authMiddleware, downloadSampleExcel);
 router.get("/export", authMiddleware, exportAccountMaster);
